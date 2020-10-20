@@ -1,38 +1,60 @@
 package per.demo;
 
+import java.io.IOException;
+import java.util.List;
+
 public class InFileFileSystem { //extends FileSystem {
-//    private final InFileFileSystemProvider provider;
-//    private final URI uri;
 
     private final InFileFileStore fileStore;
-//    private final PathService pathService;
 
-//    private final UserPrincipalLookupService userLookupService = new UserLookupService();
-
-//    private final FileSystemView defaultView;
-
-    public InFileFileSystem(InFileFileStore fileStore) {
+    InFileFileSystem(InFileFileStore fileStore) {
         this.fileStore = fileStore;
     }
 
     public void createFile(String name, String content) {
-        fileStore.add(name);
-        fileStore.addContent(name, content);
+        try {
+            fileStore.addContent(name, content);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void updateFile(String name, String newContent) {
+        fileStore.delete(name);
 
+        try {
+            fileStore.addContent(name, newContent);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void deleteFile(String name) {
-
+        fileStore.delete(name);
     }
 
     public String readFile(String name) {
+        try {
+            return fileStore.read(name);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         return "";
     }
 
-    private void findFile(String name) {
+    public List<String> allFileNames() {
+        return fileStore.getFileNames();
+    }
 
+    public String getFileSystemName() {
+        return fileStore.getName();
+    }
+
+    public void destroy() {
+        try {
+            fileStore.destroy();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
