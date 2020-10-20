@@ -1,10 +1,13 @@
 package per.demo;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.*;
+import java.util.Iterator;
 
 public class InFilePath implements Path {
+
     @Override
     public FileSystem getFileSystem() {
         return null;
@@ -36,22 +39,32 @@ public class InFilePath implements Path {
     }
 
     @Override
-    public Path getName(int i) {
+    public Path getName(int index) {
         return null;
     }
 
     @Override
-    public Path subpath(int i, int i1) {
+    public Path subpath(int beginIndex, int endIndex) {
         return null;
     }
 
     @Override
-    public boolean startsWith(Path path) {
+    public boolean startsWith(Path other) {
         return false;
     }
 
     @Override
-    public boolean endsWith(Path path) {
+    public boolean startsWith(String other) {
+        return false;
+    }
+
+    @Override
+    public boolean endsWith(Path other) {
+        return false;
+    }
+
+    @Override
+    public boolean endsWith(String other) {
         return false;
     }
 
@@ -61,12 +74,27 @@ public class InFilePath implements Path {
     }
 
     @Override
-    public Path resolve(Path path) {
+    public Path resolve(Path other) {
         return null;
     }
 
     @Override
-    public Path relativize(Path path) {
+    public Path resolve(String other) {
+        return null;
+    }
+
+    @Override
+    public Path resolveSibling(Path other) {
+        return null;
+    }
+
+    @Override
+    public Path resolveSibling(String other) {
+        return null;
+    }
+
+    @Override
+    public Path relativize(Path other) {
         return null;
     }
 
@@ -81,32 +109,32 @@ public class InFilePath implements Path {
     }
 
     @Override
-    public Path toRealPath(LinkOption... linkOptions) throws IOException {
+    public Path toRealPath(LinkOption... options) throws IOException {
         return null;
     }
 
     @Override
-    public WatchKey register(WatchService watchService, WatchEvent.Kind<?>[] kinds, WatchEvent.Modifier... modifiers) throws IOException {
+    public File toFile() {
         return null;
     }
 
     @Override
-    public int compareTo(Path path) {
+    public WatchKey register(WatchService watcher, WatchEvent.Kind<?>[] events, WatchEvent.Modifier... modifiers) throws IOException {
+        return null;
+    }
+
+    @Override
+    public WatchKey register(WatchService watcher, WatchEvent.Kind<?>... events) throws IOException {
+        return null;
+    }
+
+    @Override
+    public Iterator<Path> iterator() {
+        return null;
+    }
+
+    @Override
+    public int compareTo(Path other) {
         return 0;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        return false;
-    }
-
-    @Override
-    public int hashCode() {
-        return 0;
-    }
-
-    @Override
-    public String toString() {
-        return null;
     }
 }

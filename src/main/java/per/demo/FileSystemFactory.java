@@ -4,11 +4,7 @@
 package per.demo;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.FileSystem;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 public final class FileSystemFactory {
@@ -18,28 +14,20 @@ public final class FileSystemFactory {
     private FileSystemFactory() {
     }
 
-    public static FileSystem newFileSystem() throws URISyntaxException, IOException {
-        URI uri = new URI(URI_SCHEME, newRandomFileSystemName(), null, null);
-        Configuration config = Configuration.basic();
-
-        return newFileSystem(InFileFileSystemProvider.instance(), uri, config);
+    public static InFileFileSystem newFileSystem() throws URISyntaxException, IOException {
+        return newFileSystem(newRandomFileSystemName());
     }
 
-    private static InFileFileSystem newFileSystem(
-            InFileFileSystemProvider provider,
-            URI uri,
-            Configuration config
-    ) throws IOException {
-        PathService pathService = new PathService();
-        FileSystemState state = new FileSystemState();
+    public static InFileFileSystem newFileSystem(String name) throws IOException {
+//        PathService pathService = new PathService();
+//        FileSystemState state = new FileSystemState();
 
-        InFileFileStore fileStore = createFileStore(config, pathService, state);
-        FileSystemView defaultView = createDefaultView(config, fileStore, pathService);
+        InFileFileStore fileStore = createFileStore(name);
+//        FileSystemView defaultView = createDefaultView(config, fileStore, pathService);
 
-        InFileFileSystem fileSystem =
-                new InFileFileSystem(provider, uri, fileStore, pathService, defaultView);
+        InFileFileSystem fileSystem = new InFileFileSystem(fileStore);
 
-        pathService.setFileSystem(fileSystem);
+//        pathService.setFileSystem(fileSystem);
         return fileSystem;
     }
 
@@ -47,16 +35,18 @@ public final class FileSystemFactory {
         return UUID.randomUUID().toString();
     }
 
-    private static InFileFileStore createFileStore(
-            Configuration config, PathService pathService, FileSystemState state) {
-        return new InFileFileStore();
+    private static InFileFileStore createFileStore(String name) {
+        return new InFileFileStore(name);
     }
 
     /**
      * Creates the default view of the file system using the given working directory.
      */
     private static FileSystemView createDefaultView(
-            Configuration config, InFileFileStore fileStore, PathService pathService) throws IOException {
+            Configuration config,
+            InFileFileStore fileStore,
+            PathService pathService
+    ) throws IOException {
         return new FileSystemView(fileStore, new Directory(), new InFilePath());
     }
 }

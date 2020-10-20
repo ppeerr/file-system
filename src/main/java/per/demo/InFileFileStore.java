@@ -1,58 +1,54 @@
 package per.demo;
 
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.file.FileStore;
-import java.nio.file.attribute.FileAttributeView;
-import java.nio.file.attribute.FileStoreAttributeView;
+import java.io.OutputStream;
+import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
-public class InFileFileStore extends FileStore {
-    @Override
-    public String name() {
-        return null;
+public class InFileFileStore { //Extends FileStore
+    private String name;
+    private Path file;
+    private List<String> fileNames = new ArrayList<>();
+
+    public InFileFileStore(String name) {
+        this.name = name;
+
+        String fileName = name + ".txt";
+        Path p = Paths.get(fileName);
+
+        if (Files.exists(p)) {
+            throw new RuntimeException("File already exists");
+        }
+
+        try {
+            file = Files.createFile(p);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    @Override
-    public String type() {
-        return null;
+    public void add(String fileName) {
+        fileNames.add(fileName);
     }
 
-    @Override
-    public boolean isReadOnly() {
-        return false;
-    }
+    public synchronized void addContent(String fileName, String content) { //TODO check sync
+        FileInputStream fin= new FileInputStream(file.getName());
+        FileChannel channel = fin.getChannel();
+        try {
+            OutputStream outputStream = Files.newOutputStream(file);
 
-    @Override
-    public long getTotalSpace() throws IOException {
-        return 0;
-    }
+            outputStream.write("\n".getBytes());
+            outputStream.write(fileName.getBytes());
 
-    @Override
-    public long getUsableSpace() throws IOException {
-        return 0;
-    }
-
-    @Override
-    public long getUnallocatedSpace() throws IOException {
-        return 0;
-    }
-
-    @Override
-    public boolean supportsFileAttributeView(Class<? extends FileAttributeView> aClass) {
-        return false;
-    }
-
-    @Override
-    public boolean supportsFileAttributeView(String s) {
-        return false;
-    }
-
-    @Override
-    public <V extends FileStoreAttributeView> V getFileStoreAttributeView(Class<V> aClass) {
-        return null;
-    }
-
-    @Override
-    public Object getAttribute(String s) throws IOException {
-        return null;
+            outputStream.write("\n".getBytes());
+            outputStream.write(content.getBytes());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

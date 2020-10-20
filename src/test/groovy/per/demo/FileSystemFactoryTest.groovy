@@ -7,8 +7,11 @@ import spock.lang.Specification
 
 class FileSystemFactoryTest extends Specification {
     def "should return fileSystem when newFilwSystem called"() {
+        given:
+        def name = "kek"
+
         when:
-        def fileSystem = FileSystemFactory.newFileSystem()
+        def fileSystem = FileSystemFactory.newFileSystem(name)
 
         then:
         fileSystem
