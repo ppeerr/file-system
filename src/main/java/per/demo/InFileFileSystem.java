@@ -1,7 +1,11 @@
 package per.demo;
 
+import org.apache.commons.math3.util.Pair;
+
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class InFileFileSystem { //extends FileSystem {
 
@@ -43,14 +47,18 @@ public class InFileFileSystem { //extends FileSystem {
     }
 
     public List<String> allFileNames() {
-        return fileStore.getFileNames();
+        return new ArrayList<>(fileStore.getMap().keySet());
     }
 
     public String getFileSystemName() {
         return fileStore.getName();
     }
 
-    public void destroy() {
+    public ConcurrentHashMap<String, Pair<Long, Integer>> getMap() {
+        return fileStore.getMap();
+    }
+
+    void destroy() {
         try {
             fileStore.destroy();
         } catch (IOException e) {

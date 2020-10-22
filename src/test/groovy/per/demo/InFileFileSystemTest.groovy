@@ -27,7 +27,7 @@ class InFileFileSystemTest extends Specification {
         system.createFile(name, "Hello_world")
 
         then:
-        Path p = Paths.get(NAME + ".txt")
+        Path p = Paths.get(NAME + ".iffs")
         def lines = Files.readAllLines(p)
         !lines.isEmpty()
         lines.get(0) == "Hello_world"
@@ -42,7 +42,7 @@ class InFileFileSystemTest extends Specification {
         system.createFile(name + "2", "Hello_world and You!")
 
         then:
-        Path p = Paths.get(NAME + ".txt")
+        Path p = Paths.get(NAME + ".iffs")
         def lines = Files.readAllLines(p)
         !lines.isEmpty()
         lines.get(0) == "Hello_world"
@@ -59,7 +59,7 @@ class InFileFileSystemTest extends Specification {
         system.deleteFile(name)
 
         then:
-        Path p = Paths.get(NAME + ".txt")
+        Path p = Paths.get(NAME + ".iffs")
         def lines = Files.readAllLines(p)
         lines.size() == 2
         lines.get(0) == "Hello_world"
@@ -80,7 +80,7 @@ class InFileFileSystemTest extends Specification {
         system.updateFile(name, "hooray!")
 
         then:
-        Path p = Paths.get(NAME + ".txt")
+        Path p = Paths.get(NAME + ".iffs")
         def lines = Files.readAllLines(p)
         lines.size() == 3
         lines.get(0) == "Hello_world"
@@ -89,8 +89,8 @@ class InFileFileSystemTest extends Specification {
 
         def names = system.allFileNames()
         names.size() == 2
-        names[0] == name + "2"
-        names[1] == name
+        names.contains(name + "2")
+        names.contains(name)
     }
 
     def "should read file content"() {
@@ -125,6 +125,6 @@ class InFileFileSystemTest extends Specification {
     }
 
     void cleanup() {
-        system.destroy()
+        FileSystemFactory.destroy(system.getFileSystemName())
     }
 }

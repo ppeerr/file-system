@@ -1,40 +1,43 @@
 package per.demo;
 
-import java.io.*;
+import org.apache.commons.math3.util.Pair;
+
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 class InFileFileStore { //Extends FileStore
     private String name;
     private Path file;
-    private List<String> fileNames = new ArrayList<>();
-    private Map<String, Long> positionsByNames = new HashMap<>();
-    private Map<String, Integer> sizesByNames = new HashMap<>();
+    private ConcurrentHashMap<String, Pair<Long, Integer>> positionsAndSizesByNames = new ConcurrentHashMap<>();
     private FileChannel channel;
     private RandomAccessFile fin;
+
+    private final Object closeLock = new Object();
+    private volatile boolean open = true;
 
     InFileFileStore(String name) {
         this.name = name;
 
-        String fileName = name + ".txt";
-        Path p = Paths.get(fileName);
+        String fileName = name;
+        Path p = Paths.get(fileName); //needed?
 
-        if (Files.exists(p)) {
-            throw new RuntimeException("File already exists");
-        }
-
-        try {
-            file = Files.createFile(p);
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (!Files.exists(p)) {
+//            throw new RuntimeException("File already exists");
+            try {
+                file = Files.createFile(p);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
+            file = p;
         }
 
         try {
@@ -50,24 +53,29 @@ class InFileFileStore { //Extends FileStore
     }
 
     synchronized void addContent(String fileName, String content) throws IOException { //TODO check sync
-        fileNames.add(fileName);
-        positionsByNames.put(fileName, channel.size());
-        sizesByNames.put(fileName, content.getBytes().length);
+        positionsAndSizesByNames.put(
+                fileName,
+                new Pair<>(
+                        channel.size(),
+                        content.getBytes().length
+                )
+        );
+
 
         ByteBuffer buff = ByteBuffer.wrap((content + "\n").getBytes(StandardCharsets.UTF_8));
-
 
         channel.write(buff);
         channel.force(true);
     }
 
     String read(String fileName) throws IOException {
-        if (!fileNames.contains(fileName)) {
+        if (!positionsAndSizesByNames.containsKey(fileName)) {
             throw new RuntimeException("No file " + fileName + " found");
         }
 
-        Long pos = positionsByNames.get(fileName);
-        Integer size = sizesByNames.get(fileName);
+        Pair<Long, Integer> info = positionsAndSizesByNames.get(fileName);
+        Long pos = info.getFirst();
+        Integer size = info.getSecond();
         String fileContent;
 
         ByteBuffer buff = ByteBuffer.allocate(size); //TODO refactor
@@ -78,22 +86,26 @@ class InFileFileStore { //Extends FileStore
     }
 
     void delete(String fileName) {
-        fileNames.remove(fileName);
-        positionsByNames.remove(fileName);
-        sizesByNames.remove(fileName);
+        positionsAndSizesByNames.remove(fileName);
     }
 
     void destroy() throws IOException {
-        channel.close();
-        fin.close();
-        Files.delete(file);
-    }
+        synchronized (closeLock) {
+            if (!open)
+                return;
 
-    List<String> getFileNames() {
-        return fileNames;
+            channel.close();
+            fin.close();
+            Files.delete(file);
+            open = false;
+        }
     }
 
     String getName() {
         return name;
+    }
+
+    public ConcurrentHashMap<String, Pair<Long, Integer>> getMap() {
+        return positionsAndSizesByNames;
     }
 }

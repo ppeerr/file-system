@@ -15,7 +15,7 @@ class FileSystemFactoryTest extends Specification {
         system = FileSystemFactory.newFileSystem()
 
         then:
-        Path p = Paths.get(system.getFileSystemName() + ".txt")
+        Path p = Paths.get(system.getFileSystemName())
         Files.exists(p)
     }
 
@@ -27,12 +27,12 @@ class FileSystemFactoryTest extends Specification {
         system = FileSystemFactory.newFileSystem(name)
 
         then:
-        Path p = Paths.get(name + ".txt")
+        Path p = Paths.get(name + ".iffs")
         Files.exists(p)
     }
 
     void cleanup() {
         if (system != null)
-            system.destroy()
+            FileSystemFactory.destroy(system.getFileSystemName())
     }
 }
