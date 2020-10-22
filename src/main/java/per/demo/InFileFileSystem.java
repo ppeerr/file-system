@@ -1,5 +1,8 @@
 package per.demo;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.Pair;
 
 import java.io.IOException;
@@ -7,19 +10,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
+@RequiredArgsConstructor
 public class InFileFileSystem { //extends FileSystem {
 
+    @Getter
+    private final String name;
     private final InFileFileStore fileStore;
-
-    InFileFileSystem(InFileFileStore fileStore) {
-        this.fileStore = fileStore;
-    }
 
     public void createFile(String name, String content) {
         try {
             fileStore.addContent(name, content);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Failed to add content", e);
         }
     }
 
@@ -29,7 +32,7 @@ public class InFileFileSystem { //extends FileSystem {
         try {
             fileStore.addContent(name, newContent);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Failed to add content", e);
         }
     }
 
@@ -41,28 +44,25 @@ public class InFileFileSystem { //extends FileSystem {
         try {
             return fileStore.read(name);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Failed to read content", e);
         }
+
         return "";
     }
 
     public List<String> allFileNames() {
-        return new ArrayList<>(fileStore.getMap().keySet());
-    }
-
-    public String getFileSystemName() {
-        return fileStore.getName();
+        return new ArrayList<>(fileStore.getPositionsAndSizesByNames().keySet());
     }
 
     public ConcurrentHashMap<String, Pair<Long, Integer>> getMap() {
-        return fileStore.getMap();
+        return fileStore.getPositionsAndSizesByNames();
     }
 
     void destroy() {
         try {
             fileStore.destroy();
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Failed to destroy", e);
         }
     }
 }

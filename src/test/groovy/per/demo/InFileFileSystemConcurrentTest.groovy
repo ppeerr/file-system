@@ -6,7 +6,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
-class InFileFileSystemParallelTest extends Specification {
+class InFileFileSystemConcurrentTest extends Specification {
 
     private InFileFileSystem systemOne
     private InFileFileSystem systemTwo
@@ -55,8 +55,8 @@ class InFileFileSystemParallelTest extends Specification {
 
     void cleanup() {
         if (systemOne != null)
-            FileSystemFactory.destroy(systemOne.getFileSystemName())
+            FileSystemFactory.destroy(systemOne.getName())
         if (systemTwo != null)
-            FileSystemFactory.destroy(systemTwo.getFileSystemName())
+            FileSystemFactory.destroy(systemTwo.getName())
     }
 }

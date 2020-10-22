@@ -15,7 +15,7 @@ class FileSystemFactoryTest extends Specification {
         system = FileSystemFactory.newFileSystem()
 
         then:
-        Path p = Paths.get(system.getFileSystemName())
+        Path p = Paths.get(system.getName())
         Files.exists(p)
     }
 
@@ -33,6 +33,6 @@ class FileSystemFactoryTest extends Specification {
 
     void cleanup() {
         if (system != null)
-            FileSystemFactory.destroy(system.getFileSystemName())
+            FileSystemFactory.destroy(system.getName())
     }
 }

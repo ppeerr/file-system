@@ -24,7 +24,7 @@ public final class FileSystemFactory {
         }
 
         InFileFileStore fileStore = createFileStore(name);
-        InFileFileSystem system = new InFileFileSystem(fileStore);
+        InFileFileSystem system = new InFileFileSystem(name, fileStore);
 
         INSTANCES.put(name, system);
         return system;

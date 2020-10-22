@@ -1,5 +1,8 @@
 package per.demo;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.SneakyThrows;
 import org.apache.commons.math3.util.Pair;
 
 import java.io.FileNotFoundException;
@@ -14,8 +17,9 @@ import java.nio.file.Paths;
 import java.util.concurrent.ConcurrentHashMap;
 
 class InFileFileStore { //Extends FileStore
-    private String name;
+
     private Path file;
+    @Getter(AccessLevel.PACKAGE)
     private ConcurrentHashMap<String, Pair<Long, Integer>> positionsAndSizesByNames = new ConcurrentHashMap<>();
     private FileChannel channel;
     private RandomAccessFile fin;
@@ -23,19 +27,12 @@ class InFileFileStore { //Extends FileStore
     private final Object closeLock = new Object();
     private volatile boolean open = true;
 
-    InFileFileStore(String name) {
-        this.name = name;
-
-        String fileName = name;
+    @SneakyThrows
+    InFileFileStore(String fileName) {
         Path p = Paths.get(fileName); //needed?
 
         if (!Files.exists(p)) {
-//            throw new RuntimeException("File already exists");
-            try {
-                file = Files.createFile(p);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            file = Files.createFile(p);
         } else {
             file = p;
         }
@@ -61,7 +58,6 @@ class InFileFileStore { //Extends FileStore
                 )
         );
 
-
         ByteBuffer buff = ByteBuffer.wrap((content + "\n").getBytes(StandardCharsets.UTF_8));
 
         channel.write(buff);
@@ -79,7 +75,7 @@ class InFileFileStore { //Extends FileStore
         String fileContent;
 
         ByteBuffer buff = ByteBuffer.allocate(size); //TODO refactor
-        int noOfBytesRead = channel.read(buff, pos);
+        channel.read(buff, pos);
         fileContent = new String(buff.array(), StandardCharsets.UTF_8);
 
         return fileContent;
@@ -99,13 +95,5 @@ class InFileFileStore { //Extends FileStore
             Files.delete(file);
             open = false;
         }
-    }
-
-    String getName() {
-        return name;
-    }
-
-    public ConcurrentHashMap<String, Pair<Long, Integer>> getMap() {
-        return positionsAndSizesByNames;
     }
 }

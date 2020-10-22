@@ -12,6 +12,8 @@ plugins {
 
     // Apply the groovy plugin to also add support for Groovy (needed for Spock)
     groovy
+
+    id("io.freefair.lombok") version "5.2.1"
 }
 
 repositories {
@@ -26,6 +28,8 @@ dependencies {
 
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
     implementation("com.google.guava:guava:29.0-jre")
+    implementation("org.slf4j:slf4j-api:1.7.30")
+    implementation("org.slf4j:slf4j-log4j12:1.7.30")
 
     // Use the latest Groovy version for Spock testing
     testImplementation("org.codehaus.groovy:groovy-all:2.5.11")

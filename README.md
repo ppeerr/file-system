@@ -9,4 +9,7 @@ TODO:
 - add ability of creating system from existent file
 - refactor to Byte storing from String storing
 - refactor buffers
-- add logger
+- add logger (++++)
+- implement nio.FileSystem interfaces 
+- add lombok (++++)
+- add File lock
