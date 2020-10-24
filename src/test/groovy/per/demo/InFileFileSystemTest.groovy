@@ -1,5 +1,7 @@
 package per.demo
 
+import per.demo.exception.ReadFileException
+
 class InFileFileSystemTest extends AbstractSpecification {
 
     private static final NAME = "kekek2"
@@ -97,7 +99,7 @@ class InFileFileSystemTest extends AbstractSpecification {
         system.readFile(name + "new")
 
         then:
-        thrown(RuntimeException)
+        thrown(ReadFileException)
     }
 
     def "should update file and then read content"() {

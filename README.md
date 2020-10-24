@@ -14,7 +14,7 @@ TODO:
 - set JDK 11 up (++++)
 - add extend meta space algo (++++)
 - add static-sized store impl
-- refactor structure for 'Prod' quality
+- refactor structure for 'Prod' quality (+---)
 - improve delete by working with meta space
 - add some tests and refactor them (++--)
 

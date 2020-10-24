@@ -264,7 +264,7 @@ class InFileFileStore { //Extends FileStore
 
         ByteBuffer wrap = ByteBuffer.wrap(content.getBytes(StandardCharsets.UTF_8));
 
-        channel.write(wrap, metaInfo.getIsPresentPosition());
+        channel.write(wrap, metaInfo.getPresentPosition());
         channel.force(true);
 
 //        positionsAndSizesByNames.remove(fileName);

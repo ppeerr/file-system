@@ -1,13 +1,14 @@
 package per.demo;
 
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public final class FileSystemFactory {
 
     private static final String EXTENSION = ".iffs";
-    private static Map<String, InFileFileSystem> INSTANCES = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, InFileFileSystem> INSTANCES = new ConcurrentHashMap<>();
+    private static final Object updateInstancesLock = new Object();
 
     private FileSystemFactory() {
     }
@@ -19,15 +20,21 @@ public final class FileSystemFactory {
     public static InFileFileSystem newFileSystem(String name) { //TODO synchronized?
         name += EXTENSION;
 
-        if (INSTANCES.containsKey(name)) {
+        InFileFileSystem system = INSTANCES.get(name);
+        if (system != null) {
             return INSTANCES.get(name);
         }
 
-        InFileFileStore fileStore = createFileStore(name);
-        InFileFileSystem system = new InFileFileSystem(name, fileStore);
+        synchronized (updateInstancesLock) {
+            system = INSTANCES.get(name);
 
-        INSTANCES.put(name, system);
-        return system;
+            if (system == null) {
+                system = new InFileFileSystem(name, createFileStore(name));
+                INSTANCES.put(name, system);
+            }
+
+            return system;
+        }
     }
 
     public static void destroy(String name) {
