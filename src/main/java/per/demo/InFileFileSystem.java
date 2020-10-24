@@ -3,12 +3,12 @@ package per.demo;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.math3.util.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -54,7 +54,7 @@ public class InFileFileSystem { //extends FileSystem {
         return new ArrayList<>(fileStore.getPositionsAndSizesByNames().keySet());
     }
 
-    public ConcurrentHashMap<String, Pair<Long, Integer>> getMap() {
+    public ConcurrentMap<String, Triple<Long, Integer, Boolean>> getMap() {
         return fileStore.getPositionsAndSizesByNames();
     }
 

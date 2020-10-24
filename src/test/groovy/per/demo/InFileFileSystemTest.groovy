@@ -10,7 +10,7 @@ import java.util.regex.Pattern
 
 class InFileFileSystemTest extends Specification {
 
-    private static final NAME = "kekek"
+    private static final NAME = "kekek2"
 
     private InFileFileSystem system
 
@@ -64,7 +64,13 @@ class InFileFileSystemTest extends Specification {
 
         when:
         system.createFile(name, "Hello_world")
-        system.createFile(name + "2", "Hello_world and You!")
+        system.createFile(name + "2", "Hello_world and You!2")
+        system.createFile(name + "3", "Hello_world and You!3")
+        system.createFile(name + "4", "Hello_world and You!4")
+        system.createFile(name + "5", "Hello_world and You!5")
+        system.createFile(name + "6", "Hello_world and You!6")
+        system.createFile(name + "7", "Hello_world and You!7")
+        system.createFile(name + "8", "Hello_world and You!8")
 
         then:
         Path p = Paths.get(NAME + ".iffs")
