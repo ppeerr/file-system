@@ -62,7 +62,7 @@ public class InFileFileSystem { //extends FileSystem {
                 .collect(Collectors.toList());
     }
 
-    public ConcurrentMap<String, MetaInfo> getMap() {
+    public ConcurrentMap<String, MetaInfo> getMap() { //TODO immutable
         return fileStore.getPositionsAndSizesByNames();
     }
 

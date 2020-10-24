@@ -1,7 +1,9 @@
 package per.demo;
 
 import lombok.Data;
+import lombok.experimental.Accessors;
 
+@Accessors(chain = true)
 @Data
 public class MetaInfo {
     private final long startPosition;

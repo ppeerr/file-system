@@ -1,12 +1,10 @@
 package per.demo
 
-import spock.lang.Specification
-
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
-class FileSystemFactoryTest extends Specification {
+class FileSystemFactoryTest extends AbstractSpecification {
 
     private InFileFileSystem system
 
@@ -27,12 +25,11 @@ class FileSystemFactoryTest extends Specification {
         system = FileSystemFactory.newFileSystem(name)
 
         then:
-        Path p = Paths.get(name + ".iffs")
+        Path p = Paths.get(name + EXTENSION)
         Files.exists(p)
     }
 
     void cleanup() {
-        if (system != null)
-            FileSystemFactory.destroy(system.getName())
+        destroySystemIfNotNull(system)
     }
 }

@@ -47,7 +47,7 @@ class InFileFileStore { //Extends FileStore
 
     @SneakyThrows
     InFileFileStore(String fileName) {
-        Path p = Paths.get(fileName); //needed?
+        Path p = Paths.get(fileName);
 
         boolean fileExists = false;
         if (!Files.exists(p)) {

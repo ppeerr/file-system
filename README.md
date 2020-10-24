@@ -16,7 +16,7 @@ TODO:
 - add static-sized store impl
 - refactor structure for 'Prod' quality
 - improve delete by working with meta space
-- add some tests and refactor them (+---)
+- add some tests and refactor them (++--)
 
 - check is it 'Prod' quality? :)
 

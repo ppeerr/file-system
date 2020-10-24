@@ -1,62 +1,78 @@
 package per.demo
 
-import spock.lang.Specification
-
 import java.nio.file.Files
-import java.nio.file.Path
 import java.nio.file.Paths
 
-class InFileFileSystemConcurrentTest extends Specification {
+class InFileFileSystemConcurrentTest extends AbstractSpecification {
+
+    private static final String CONTENT1 = "111111111111111111111111111111111111111111111111111111111111"
+    private static final String CONTENT2 = "222222222222222222222222222222222222222222222222222222222222"
 
     private InFileFileSystem systemOne
     private InFileFileSystem systemTwo
 
-    def "should create file 3 333"() {
+    def "should return the same references when create FileSystems for the same files"() {
+        given:
+        def name = "test"
+
         when:
-        systemOne = FileSystemFactory.newFileSystem("test")
-        systemTwo = FileSystemFactory.newFileSystem("test")
+        systemOne = FileSystemFactory.newFileSystem(name)
+        systemTwo = FileSystemFactory.newFileSystem(name)
 
         then:
         systemOne
         systemOne.is(systemTwo)
-        Path p = Paths.get("test" + ".iffs")
-        Files.exists(p)
+        Files.exists(Paths.get(name + EXTENSION))
     }
 
-    def "should create file  2"() {
+    def "should create be able to create files when called from two threads"() {
         given:
-        systemOne = FileSystemFactory.newFileSystem("test")
+        def name = "test"
+        systemOne = FileSystemFactory.newFileSystem(name)
 
         when:
-        def thread1 = new Thread({
-            systemOne.createFile("kek1", "111111111111111111111111111111111111111111111111111111111111")
-        })
-        def thread2 = new Thread({
-            systemOne.createFile("kek2", "222222222222222222222222222222222222222222222222222222222222")
-        })
+        def thread1 = new Thread({ systemOne.createFile("kek1", CONTENT1) })
+        def thread2 = new Thread({ systemOne.createFile("kek2", CONTENT2) })
 
         thread1.start()
         thread2.start()
 
         thread1.join()
         thread2.join()
+
         then:
-        Path p = Paths.get("test" + ".iffs")
-        def lines = Files.readAllLines(p)
+        def lines = Files.readAllLines(Paths.get(name + EXTENSION))
         !lines.isEmpty()
-        println lines[0]
-        println lines[1]
-
-        println systemOne.getMap()
-
-        systemOne.readFile("kek1") == "111111111111111111111111111111111111111111111111111111111111"
-        systemOne.readFile("kek2") == "222222222222222222222222222222222222222222222222222222222222"
+        lines.contains(CONTENT1)
+        lines.contains(CONTENT2)
     }
 
+    def "should write valid content when create files called from two threads"() {
+        given:
+        def name = "test"
+        systemOne = FileSystemFactory.newFileSystem(name)
+
+        when:
+        def thread1 = new Thread({ systemOne.createFile("kek1", CONTENT1) })
+        def thread2 = new Thread({ systemOne.createFile("kek2", CONTENT2) })
+
+        thread1.start()
+        thread2.start()
+
+        thread1.join()
+        thread2.join()
+
+        then:
+        systemOne.readFile("kek1") == CONTENT1
+        systemOne.readFile("kek2") == CONTENT2
+    }
+
+    //TODO concurrent update
+    //TODO concurrent delete
+    //TODO concurrent read
+
     void cleanup() {
-        if (systemOne != null)
-            FileSystemFactory.destroy(systemOne.getName())
-        if (systemTwo != null)
-            FileSystemFactory.destroy(systemTwo.getName())
+        destroySystemIfNotNull(systemOne)
+        destroySystemIfNotNull(systemTwo)
     }
 }
