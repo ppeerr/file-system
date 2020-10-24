@@ -4,7 +4,6 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Triple;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -34,7 +33,7 @@ class InFileFileStore { //Extends FileStore
 
     private Path file;
     @Getter(AccessLevel.PACKAGE)
-    private ConcurrentMap<String, Triple<Long, Integer, Boolean>> positionsAndSizesByNames = new ConcurrentHashMap<>();
+    private ConcurrentMap<String, MetaInfo> positionsAndSizesByNames = new ConcurrentHashMap<>();
     private FileChannel channel;
     private RandomAccessFile fin;
 
@@ -94,6 +93,7 @@ class InFileFileStore { //Extends FileStore
             allMatches.add(m.group(1));
         }
 
+        long[] isPresentPosition = {(HEADER + "\n").getBytes().length};
         allMatches.stream()
                 .map(it -> it.split(","))
                 .forEach(mas -> {
@@ -102,8 +102,16 @@ class InFileFileStore { //Extends FileStore
                     int size = Integer.parseInt(mas[2]);
                     String state = mas[3];
 
-                    if (state.equals("A"))
-                        positionsAndSizesByNames.put(name, Triple.of(start, size, true));
+
+
+                    if (state.equals("A")) {
+                        isPresentPosition[0] += ("{\"" + name + "\"," + start + "," + size + ",").length();
+
+                        positionsAndSizesByNames.put(name, new MetaInfo(start, size, isPresentPosition[0]));
+
+                        isPresentPosition[0] += ("A};").length();
+                    }
+
                 });
 
         metaBytes = metaContent.getBytes().length;
@@ -130,16 +138,18 @@ class InFileFileStore { //Extends FileStore
         ByteBuffer buff = ByteBuffer.wrap(metaContent);
         channel.write(buff, metaPos.get());
         channel.force(true);
-        metaPos.getAndAdd(metaContent.length);
+
+        long start = channel.size();
+        int size = content.getBytes().length;
+
+        long isPresentPosition = metaPos.get() + metaContent.length - 2;
 
         positionsAndSizesByNames.put(
                 fileName,
-                Triple.of(
-                        channel.size(),
-                        content.getBytes().length,
-                        true
-                )
+                new MetaInfo(start, size, isPresentPosition)
         );
+
+        metaPos.getAndAdd(metaContent.length);
     }
 
     private synchronized void rebuildAndIncreaseMetaSpace() throws IOException { //TODO synchronized?
@@ -152,8 +162,8 @@ class InFileFileStore { //Extends FileStore
             throw new RuntimeException("Couldn't open channel");
         }
 
-        ConcurrentMap<String, Triple<Long, Integer, Boolean>> newMap = positionsAndSizesByNames.entrySet().stream()
-                .filter(entry -> entry.getValue().getRight())
+        ConcurrentMap<String, MetaInfo> newMap = positionsAndSizesByNames.entrySet().stream()
+                .filter(entry -> entry.getValue().isPresent())
                 .collect(Collectors.toConcurrentMap(Map.Entry::getKey, Map.Entry::getValue));
 
         StringBuilder metaContent = new StringBuilder("");
@@ -166,9 +176,9 @@ class InFileFileStore { //Extends FileStore
         ByteBuffer buff = ByteBuffer.wrap(newStartState.getBytes(StandardCharsets.UTF_8));
         channel.write(buff);
 
-        for (Map.Entry<String, Triple<Long, Integer, Boolean>> entry : newMap.entrySet()) {
+        for (Map.Entry<String, MetaInfo> entry : newMap.entrySet()) {
             String fileName = entry.getKey();
-            int size = entry.getValue().getMiddle();
+            int size = entry.getValue().getSize();
 
             metaContent
                     .append("{\"").append(fileName).append("\",")
@@ -241,9 +251,9 @@ class InFileFileStore { //Extends FileStore
             throw new RuntimeException("No file " + fileName + " found");
         }
 
-        Triple<Long, Integer, Boolean> info = positionsAndSizesByNames.get(fileName);
-        Long pos = info.getLeft();
-        Integer size = info.getMiddle();
+        MetaInfo info = positionsAndSizesByNames.get(fileName);
+        long pos = info.getStartPosition();
+        int size = info.getSize();
         String fileContent;
 
         ByteBuffer buff = ByteBuffer.allocate(size); //TODO refactor
@@ -253,8 +263,18 @@ class InFileFileStore { //Extends FileStore
         return fileContent;
     }
 
-    void delete(String fileName) { //TODO sync with meta
-        positionsAndSizesByNames.remove(fileName);
+    synchronized void delete(String fileName) throws IOException { //TODO check existence
+        MetaInfo metaInfo = positionsAndSizesByNames.get(fileName);
+
+        String content = "D";
+
+        ByteBuffer wrap = ByteBuffer.wrap(content.getBytes(StandardCharsets.UTF_8));
+
+        channel.write(wrap, metaInfo.getIsPresentPosition());
+        channel.force(true);
+
+//        positionsAndSizesByNames.remove(fileName);
+        metaInfo.setPresent(false);
     }
 
     void destroy() throws IOException {

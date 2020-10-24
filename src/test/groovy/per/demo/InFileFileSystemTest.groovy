@@ -99,6 +99,8 @@ class InFileFileSystemTest extends Specification {
         def names = system.allFileNames()
         names.size() == 1
         names[0] == name + "2"
+
+        println system.getMap()
     }
 
     def "should update file"() {

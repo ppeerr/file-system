@@ -3,12 +3,12 @@ package per.demo;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.tuple.Triple;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -27,9 +27,9 @@ public class InFileFileSystem { //extends FileSystem {
     }
 
     public void updateFile(String name, String newContent) {
-        fileStore.delete(name);
-
         try {
+            fileStore.delete(name);
+
             fileStore.addContent(name, newContent);
         } catch (IOException e) {
             log.error("Failed to add content", e);
@@ -37,7 +37,11 @@ public class InFileFileSystem { //extends FileSystem {
     }
 
     public void deleteFile(String name) {
-        fileStore.delete(name);
+        try {
+            fileStore.delete(name);
+        } catch (IOException e) {
+            log.error("Failed to add content", e);
+        }
     }
 
     public String readFile(String name) {
@@ -51,10 +55,14 @@ public class InFileFileSystem { //extends FileSystem {
     }
 
     public List<String> allFileNames() {
-        return new ArrayList<>(fileStore.getPositionsAndSizesByNames().keySet());
+        return fileStore.getPositionsAndSizesByNames()
+                .entrySet().stream()
+                .filter(it -> it.getValue().isPresent())
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
     }
 
-    public ConcurrentMap<String, Triple<Long, Integer, Boolean>> getMap() {
+    public ConcurrentMap<String, MetaInfo> getMap() {
         return fileStore.getPositionsAndSizesByNames();
     }
 

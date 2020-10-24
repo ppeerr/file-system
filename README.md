@@ -3,14 +3,12 @@ TODO:
 - meta in the beginning of file (++++)
 - store size and position in file (++++)
 - delete file content in file
-- sync in-memory collections with file content (+++-)
+- sync in-memory collections with file content (++++)
 - check and refactor closeable resources (++--)
 - check and refactor synchronized parts
 - add ability of creating system from existent file (++++)
-- refactor to Byte storing from String storing (----)
 - refactor buffers
 - add logger (++++)
-- implement nio.FileSystem interfaces (----)
 - add lombok (++++)
 - add File lock
 - set JDK 11 up (++++)
@@ -18,9 +16,13 @@ TODO:
 - add static-sized store impl
 - refactor structure for 'Prod' quality
 - improve delete by working with meta space
-- add some tests and refactor them
+- add some tests and refactor them (+---)
 
 - check is it 'Prod' quality? :)
+
+NOT in MVP:
+- refactor to Byte storing from String storing (----)
+- implement nio.FileSystem interfaces (----)
 
 Trade-off'ы и допущения:
 - для легкости разработки тестирования примем реализацию на строках вместо чистых байтов. Очевидно, 
