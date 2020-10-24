@@ -47,7 +47,7 @@ class InFileFileSystemConcurrentTest extends AbstractSpecification {
         lines.contains(CONTENT2)
     }
 
-    def "should write valid content when create files called from two threads"() {
+    def "should write valid contents when create files called from two threads"() {
         given:
         def name = "test"
         systemOne = FileSystemFactory.newFileSystem(name)
@@ -67,9 +67,76 @@ class InFileFileSystemConcurrentTest extends AbstractSpecification {
         systemOne.readFile("kek2") == CONTENT2
     }
 
-    //TODO concurrent update
-    //TODO concurrent delete
-    //TODO concurrent read
+    def "should update valid contents when update files called from two threads"() {
+        given:
+        def name = "test"
+        systemOne = FileSystemFactory.newFileSystem(name)
+        systemOne.createFile("kek1", CONTENT1)
+        systemOne.createFile("kek2", CONTENT2)
+
+        when:
+        def thread1 = new Thread({ systemOne.updateFile("kek1", "ch1" + CONTENT1) })
+        def thread2 = new Thread({ systemOne.updateFile("kek2", CONTENT2 + "ch2") })
+
+        thread1.start()
+        thread2.start()
+
+        thread1.join()
+        thread2.join()
+
+        then:
+        systemOne.readFile("kek1") == "ch1" + CONTENT1
+        systemOne.readFile("kek2") == CONTENT2 + "ch2"
+    }
+
+    def "should delete files when delete called from two threads"() {
+        given:
+        def name = "test"
+        systemOne = FileSystemFactory.newFileSystem(name)
+        systemOne.createFile("kek1", CONTENT1)
+        systemOne.createFile("kek2", CONTENT2)
+        systemOne.createFile("kek3", CONTENT1)
+
+        when:
+        def thread1 = new Thread({ systemOne.deleteFile("kek3") })
+        def thread2 = new Thread({ systemOne.deleteFile("kek1") })
+
+        thread1.start()
+        thread2.start()
+
+        thread1.join()
+        thread2.join()
+
+        then:
+        def names = systemOne.allFileNames()
+        names.size() == 1
+        names.contains("kek2")
+        systemOne.readFile("kek2") == CONTENT2
+    }
+
+    def "should read contents when read called from two threads"() {
+        given:
+        def name = "test"
+        systemOne = FileSystemFactory.newFileSystem(name)
+        systemOne.createFile("kek1", CONTENT1)
+        systemOne.createFile("kek2", CONTENT2)
+
+        when:
+        String content2 = ""
+        String content1 = ""
+        def thread1 = new Thread({ content2 = systemOne.readFile("kek2") })
+        def thread2 = new Thread({ content1 = systemOne.readFile("kek1") })
+
+        thread1.start()
+        thread2.start()
+
+        thread1.join()
+        thread2.join()
+
+        then:
+        content1 == CONTENT1
+        content2 == CONTENT2
+    }
 
     void cleanup() {
         destroySystemIfNotNull(systemOne)

@@ -29,7 +29,6 @@ public class InFileFileSystem { //extends FileSystem {
     public void updateFile(String name, String newContent) {
         try {
             fileStore.delete(name);
-
             fileStore.addContent(name, newContent);
         } catch (IOException e) {
             log.error("Failed to add content", e);

@@ -1,5 +1,5 @@
 TODO:
-- concurrency tests (++--)
+- concurrency tests (+++-)
 - meta in the beginning of file (++++)
 - store size and position in file (++++)
 - delete file content in file

@@ -240,12 +240,6 @@ class InFileFileStore { //Extends FileStore
         return metaContent.toString().getBytes(StandardCharsets.UTF_8);
     }
 
-    private boolean needToIncreaseMetaSpace(int metaContentSize) {
-        int lastPossibleMetaBytePos = HEADER_BYTES + metaBytes;
-
-        return metaPos.get() + metaContentSize > lastPossibleMetaBytePos;
-    }
-
     String read(String fileName) throws IOException {
         if (!positionsAndSizesByNames.containsKey(fileName)) {
             throw new RuntimeException("No file " + fileName + " found");
@@ -275,6 +269,12 @@ class InFileFileStore { //Extends FileStore
 
 //        positionsAndSizesByNames.remove(fileName);
         metaInfo.setPresent(false);
+    }
+
+    private boolean needToIncreaseMetaSpace(int metaContentSize) {
+        int lastPossibleMetaBytePos = HEADER_BYTES + metaBytes;
+
+        return metaPos.get() + metaContentSize > lastPossibleMetaBytePos;
     }
 
     void destroy() throws IOException {
