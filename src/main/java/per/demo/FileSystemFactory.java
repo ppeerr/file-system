@@ -17,7 +17,11 @@ public final class FileSystemFactory {
         return newFileSystem(newRandomFileSystemName());
     }
 
-    public static InFileFileSystem newFileSystem(String name) { //TODO synchronized?
+    public static InFileFileSystem newFileSystem(String name) {
+        return newFileSystem(name, Configuration.defaultConfiguration());
+    }
+
+    public static InFileFileSystem newFileSystem(String name, Configuration configuration) {
         name += EXTENSION;
 
         InFileFileSystem system = INSTANCES.get(name);
@@ -29,7 +33,7 @@ public final class FileSystemFactory {
             system = INSTANCES.get(name);
 
             if (system == null) {
-                system = new InFileFileSystem(name, createFileStore(name));
+                system = new InFileFileSystem(name, new InFileFileStore(name, configuration));
                 INSTANCES.put(name, system);
             }
 
@@ -49,9 +53,5 @@ public final class FileSystemFactory {
 
     private static String newRandomFileSystemName() {
         return UUID.randomUUID().toString();
-    }
-
-    private static InFileFileStore createFileStore(String name) {
-        return new InFileFileStore(name);
     }
 }

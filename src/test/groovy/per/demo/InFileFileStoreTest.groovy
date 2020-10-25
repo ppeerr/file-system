@@ -1,6 +1,5 @@
 package per.demo
 
-
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
@@ -16,7 +15,7 @@ class InFileFileStoreTest extends AbstractSpecification {
         Files.writeString(file, FILE_SYSTEM_CONTENT, StandardOpenOption.WRITE)
 
         when:
-        fileStore = new InFileFileStore(name + EXTENSION)
+        fileStore = new InFileFileStore(name + EXTENSION, Configuration.defaultConfiguration())
         def map = fileStore.getPositionsAndSizesByNames()
 
         then:

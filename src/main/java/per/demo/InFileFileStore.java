@@ -27,26 +27,31 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 class InFileFileStore { //Extends FileStore
 
-    private static final String HEADER = "START";
-    private static final int HEADER_BYTES = (HEADER + "\n").getBytes().length;
-    private static final String META_DELIMITER = "----META ENDS----";
+    private final String metaHeader;
+    private final int metaHeaderBytesCount;
+    private final String metaDelimiter;
+    private int metaBytesCount;
 
-    private Path file;
     @Getter(AccessLevel.PACKAGE)
     private ConcurrentMap<String, MetaInfo> positionsAndSizesByNames = new ConcurrentHashMap<>();
+
+    private Path file;
     private FileChannel channel;
     private RandomAccessFile fin;
 
     private final Object closeLock = new Object();
     private volatile boolean open = true;
 
-    private int metaBytes;
-
     private volatile AtomicLong metaPos;
     private volatile long endPos;
 
     @SneakyThrows
-    InFileFileStore(String fileName) {
+    InFileFileStore(String fileName, Configuration configuration) {
+        metaHeader = configuration.getMetaHeader();
+        metaHeaderBytesCount = (metaHeader + "\n").getBytes().length;
+        metaDelimiter = configuration.getMetaDelimiter();
+        metaBytesCount = configuration.getMetaBytesCount();
+
         Path p = Paths.get(fileName);
 
         boolean fileExists = false;
@@ -69,14 +74,67 @@ class InFileFileStore { //Extends FileStore
             initializeFromFile();
     }
 
+    synchronized void addContent(String fileName, String content) throws IOException {
+        addMeta(fileName, content);
+
+        ByteBuffer buff = ByteBuffer.wrap((content + "\n").getBytes(StandardCharsets.UTF_8));
+
+        channel.write(buff);
+        channel.force(true);
+        endPos = channel.size();
+    }
+
+    String read(String fileName) throws IOException {
+        if (!positionsAndSizesByNames.containsKey(fileName)) {
+            throw new RuntimeException("No file " + fileName + " found");
+        }
+
+        MetaInfo info = positionsAndSizesByNames.get(fileName);
+        long pos = info.getStartPosition();
+        int size = info.getSize();
+        String fileContent;
+
+        ByteBuffer buff = ByteBuffer.allocate(size); //TODO refactor
+        channel.read(buff, pos);
+        fileContent = new String(buff.array(), StandardCharsets.UTF_8);
+
+        return fileContent;
+    }
+
+    synchronized void delete(String fileName) throws IOException {
+        MetaInfo metaInfo = positionsAndSizesByNames.get(fileName);
+
+        String content = "D";
+
+        ByteBuffer wrap = ByteBuffer.wrap(content.getBytes(StandardCharsets.UTF_8));
+
+        channel.write(wrap, metaInfo.getPresentPosition());
+        channel.force(true);
+
+        metaInfo.setPresent(false);
+    }
+
+    void destroy() throws IOException {
+        synchronized (closeLock) {
+            if (!open)
+                return;
+
+            channel.close();
+            fin.close();
+            Files.delete(file);
+            open = false;
+        }
+    }
+
     private void initialize() throws IOException {
-        metaBytes = 100;
+        String startMetaContent = metaHeader + "\n" +
+                StringUtils.repeat(' ', metaBytesCount) + "\n" +
+                metaDelimiter + "\n"; //TODO optimize?
 
-        String startState = HEADER + "\n" + StringUtils.repeat(' ', metaBytes) + "\n" + META_DELIMITER + "\n"; //TODO optimize?
-        metaPos = new AtomicLong((HEADER + "\n").getBytes().length);
-        endPos = startState.getBytes().length;
+        metaPos = new AtomicLong((metaHeader + "\n").getBytes().length);
+        endPos = startMetaContent.getBytes().length;
 
-        ByteBuffer buff = ByteBuffer.wrap(startState.getBytes(StandardCharsets.UTF_8));
+        ByteBuffer buff = ByteBuffer.wrap(startMetaContent.getBytes(StandardCharsets.UTF_8));
         channel.write(buff);
         channel.force(true);
     }
@@ -93,7 +151,7 @@ class InFileFileStore { //Extends FileStore
             allMatches.add(m.group(1));
         }
 
-        long[] isPresentPosition = {(HEADER + "\n").getBytes().length};
+        long[] isPresentPosition = {(metaHeader + "\n").getBytes().length};
         allMatches.stream()
                 .map(it -> it.split(","))
                 .forEach(mas -> {
@@ -114,18 +172,8 @@ class InFileFileStore { //Extends FileStore
 
                 });
 
-        metaBytes = metaContent.getBytes().length;
-        metaPos = new AtomicLong((HEADER + "\n" + metaContent.trim()).getBytes().length);
-    }
-
-    synchronized void addContent(String fileName, String content) throws IOException { //TODO check sync
-        addMeta(fileName, content);
-
-        ByteBuffer buff = ByteBuffer.wrap((content + "\n").getBytes(StandardCharsets.UTF_8));
-
-        channel.write(buff);
-        channel.force(true);
-        endPos = channel.size();
+        metaBytesCount = metaContent.getBytes().length;
+        metaPos = new AtomicLong((metaHeader + "\n" + metaContent.trim()).getBytes().length);
     }
 
     private void addMeta(String fileName, String content) throws IOException {
@@ -152,6 +200,7 @@ class InFileFileStore { //Extends FileStore
         metaPos.getAndAdd(metaContent.length);
     }
 
+
     private synchronized void rebuildAndIncreaseMetaSpace() throws IOException { //TODO synchronized?
         String bufFileName = file.toString() + ".buf";
         Path p = Paths.get(bufFileName);
@@ -168,9 +217,12 @@ class InFileFileStore { //Extends FileStore
 
         StringBuilder metaContent = new StringBuilder("");
 
-        int newMetaBytes = metaBytes << 1;
-        String newStartState = HEADER + "\n" + StringUtils.repeat(' ', newMetaBytes) + "\n" + META_DELIMITER + "\n"; //TODO optimize?
-        int newMetaPos = (HEADER + "\n").getBytes().length;
+        int newMetaBytes = metaBytesCount << 1;
+        String newStartState = metaHeader + "\n" +
+                StringUtils.repeat(' ', newMetaBytes) + "\n" +
+                metaDelimiter + "\n"; //TODO optimize?
+
+        int newMetaPos = (metaHeader + "\n").getBytes().length;
         long newEndPos = newStartState.getBytes().length;
 
         ByteBuffer buff = ByteBuffer.wrap(newStartState.getBytes(StandardCharsets.UTF_8));
@@ -222,7 +274,7 @@ class InFileFileStore { //Extends FileStore
         open = true;
         metaPos = new AtomicLong(metaContentToStore.length());
         endPos = newEndPos;
-        metaBytes = newMetaBytes;
+        metaBytesCount = newMetaBytes;
     }
 
     private byte[] buildMetaContent(String fileName, String content) {
@@ -240,52 +292,9 @@ class InFileFileStore { //Extends FileStore
         return metaContent.toString().getBytes(StandardCharsets.UTF_8);
     }
 
-    String read(String fileName) throws IOException {
-        if (!positionsAndSizesByNames.containsKey(fileName)) {
-            throw new RuntimeException("No file " + fileName + " found");
-        }
-
-        MetaInfo info = positionsAndSizesByNames.get(fileName);
-        long pos = info.getStartPosition();
-        int size = info.getSize();
-        String fileContent;
-
-        ByteBuffer buff = ByteBuffer.allocate(size); //TODO refactor
-        channel.read(buff, pos);
-        fileContent = new String(buff.array(), StandardCharsets.UTF_8);
-
-        return fileContent;
-    }
-
-    synchronized void delete(String fileName) throws IOException { //TODO check existence
-        MetaInfo metaInfo = positionsAndSizesByNames.get(fileName);
-
-        String content = "D";
-
-        ByteBuffer wrap = ByteBuffer.wrap(content.getBytes(StandardCharsets.UTF_8));
-
-        channel.write(wrap, metaInfo.getPresentPosition());
-        channel.force(true);
-
-//        positionsAndSizesByNames.remove(fileName);
-        metaInfo.setPresent(false);
-    }
-
     private boolean needToIncreaseMetaSpace(int metaContentSize) {
-        int lastPossibleMetaBytePos = HEADER_BYTES + metaBytes;
+        int lastPossibleMetaPos = metaHeaderBytesCount + metaBytesCount;
 
-        return metaPos.get() + metaContentSize > lastPossibleMetaBytePos;
-    }
-
-    void destroy() throws IOException {
-        synchronized (closeLock) {
-            if (!open)
-                return;
-
-            channel.close();
-            fin.close();
-            Files.delete(file);
-            open = false;
-        }
+        return metaPos.get() + metaContentSize > lastPossibleMetaPos;
     }
 }
