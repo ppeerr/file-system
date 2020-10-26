@@ -53,6 +53,6 @@ class InFileFileSystemRebuildTest extends AbstractSpecification {
     }
 
     void cleanup() {
-        FileSystemFactory.destroy(system.getName())
+        destroySystemIfNotNull(system)
     }
 }

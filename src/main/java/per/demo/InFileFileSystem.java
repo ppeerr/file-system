@@ -99,9 +99,13 @@ public class InFileFileSystem { //extends FileSystem {
         return storeView.contains(fileName);
     }
 
-    void destroy() {
+    public boolean isOpen() {
+        return store.isOpen();
+    }
+
+    void close() {
         try {
-            store.destroy();
+            store.close();
         } catch (Exception e) {
             throw new DestroyFileSystemException(e);
         }

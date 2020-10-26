@@ -45,13 +45,13 @@ public final class FileSystemFactory {
         }
     }
 
-    public static void destroy(String name) {
+    public static void close(String name) {
         InFileFileSystem system = INSTANCES.get(name);
         if (system == null) {
             return;
         }
 
-        system.destroy();
+        system.close();
         INSTANCES.remove(name);
     }
 

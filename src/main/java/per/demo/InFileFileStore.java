@@ -53,9 +53,7 @@ class InFileFileStore { //Extends FileStore
             this.file = file;
         }
 
-        this.channel = getFileChannel(this.file); //TODO check
-
-//    channel = new RandomAccessFile(this.file.toFile(), "rwd").getChannel(); //TODO check
+        this.channel = getFileChannel(this.file);
 
         if (!fileExists)
             initialize();
@@ -90,19 +88,26 @@ class InFileFileStore { //Extends FileStore
         channel.force(false);
     }
 
-    synchronized String getMetaContent() throws IOException { //TODO synchronized?
+    String getMetaContent() throws IOException {
         return readContent(metaHeaderBytesCount, metaBytesCount);
     }
 
-    void destroy() throws IOException {
+    void close() throws IOException {
         synchronized (closeLock) {
             if (!open)
                 return;
 
             channel.close();
-            Files.delete(file); //TODO needed?
             open = false;
         }
+    }
+
+    boolean isOpen() {
+        return open;
+    }
+
+    String getFilePath() {
+        return file.toString();
     }
 
     private void initialize() throws IOException {
@@ -125,14 +130,6 @@ class InFileFileStore { //Extends FileStore
     private void initializeFromFile() throws IOException {
         //todo validation
         String metaContent = Files.readAllLines(file).get(1); //TODO optimize
-
-        List<String> allMatches = new ArrayList<>();
-        Matcher m = Pattern
-                .compile("\\{([^}]+)}")
-                .matcher(metaContent);
-        while (m.find()) {
-            allMatches.add(m.group(1));
-        }
 
         metaBytesCount = metaContent.getBytes().length;
         metaPos = new AtomicLong((metaHeader + "\n" + metaContent.trim()).getBytes().length);
@@ -195,7 +192,6 @@ class InFileFileStore { //Extends FileStore
 
         List<String> metaInfosToStore = new ArrayList<>();
         List<FileInfo> fileInfosToUpdate = new ArrayList<>();
-        long metaSpaceIncreaseDiff = newMetaBytes - metaBytesCount;
         long isPresentFlagPos = newMetaPos;
         for (String info : metaInfos) {
             String[] mas = info.split(",");
@@ -211,8 +207,6 @@ class InFileFileStore { //Extends FileStore
 
             long newStart = bufChannel.position();
             bufChannel.write(buff);
-
-//            newEndPos += contentBytes.length;
 
             String curFileMeta = "{\"" + fileName + "\"," + newStart + "," + size + "," + state + "}";
             metaInfosToStore.add(curFileMeta);
