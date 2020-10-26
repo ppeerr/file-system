@@ -22,6 +22,25 @@ class InFileFileStoreTest extends AbstractSpecification {
         fileStore.getMetaContent().trim() == "{\"kek\",2025,11,A}{\"kek1\",2037,12,A}"
     }
 
+    def "should be able to increase meta space many times"() {
+        given:
+        def name = "FROM_FILE_rebuild"
+
+        def smallMetaSpaceConfiguration = Configuration.builder()
+                .metaHeader("START")
+                .metaDelimiter("--END--")
+                .metaBytesCount(5)
+                .build()
+        fileStore = new InFileFileStore(name + EXTENSION, smallMetaSpaceConfiguration)
+
+        when:
+        fileStore.saveContent("kek1", "any")
+
+        then:
+        fileStore
+        fileStore.getMetaContent().trim() == "{\"kek1\",35,3,A}"
+    }
+
     void cleanup() {
         destroyStoreIfNotNull(fileStore)
     }

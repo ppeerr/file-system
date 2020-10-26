@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
-class InFileFileStore { //Extends FileStore
+class InFileFileStore {
 
     private final String metaHeader;
     private final int metaHeaderBytesCount;
@@ -139,8 +139,8 @@ class InFileFileStore { //Extends FileStore
         byte[] metaContent = buildMetaContent(fileName, content);
         List<FileInfo> fileInfosToUpdate = new ArrayList<>();
 
-        if (needToIncreaseMetaSpace(metaContent.length)) {
-            fileInfosToUpdate.addAll(rebuildAndIncreaseMetaSpace());
+        while (needToIncreaseMetaSpace(metaContent.length)) {
+            fileInfosToUpdate = new ArrayList<>(rebuildAndIncreaseMetaSpace());
             metaContent = buildMetaContent(fileName, content);
         }
 

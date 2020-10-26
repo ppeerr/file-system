@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
-public class InFileFileSystem { //extends FileSystem {
+public class InFileFileSystem {
 
     @Getter
     private final String name;
