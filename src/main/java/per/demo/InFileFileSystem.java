@@ -25,27 +25,27 @@ public class InFileFileSystem { //extends FileSystem {
             throw new CreateFileException("File '" + fileName + "' already exists");
         }
 
-        MetaInfo metaInfo;
+        List<FileInfo> metaInfosToUpdate;
         try {
-            metaInfo = store.saveContent(fileName, content);
+            metaInfosToUpdate = store.saveContent(fileName, content);
         } catch (Exception e) {
             throw new CreateFileException(e);
         }
 
-        storeView.putMeta(fileName, metaInfo);
+        storeView.putMeta(metaInfosToUpdate);
     }
 
     public void updateFile(String fileName, String newContent) {
         deleteFile(fileName);
 
-        MetaInfo metaInfo;
+        List<FileInfo> fileInfosToUpdate;
         try {
-             metaInfo = store.saveContent(fileName, newContent);
+            fileInfosToUpdate = store.saveContent(fileName, newContent);
         } catch (Exception e) {
             throw new UpdateFileException(e);
         }
 
-        storeView.putMeta(fileName, metaInfo);
+        storeView.putMeta(fileInfosToUpdate);
     }
 
     public void deleteFile(String fileName) {

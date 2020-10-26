@@ -1,27 +1,12 @@
 package per.demo;
 
-import org.apache.commons.lang3.StringUtils;
-
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public class InFileFileStoreView {
 
@@ -40,10 +25,18 @@ public class InFileFileStoreView {
                 : null;
     }
 
-    void putMeta(String fileName, MetaInfo metaInfo) {
-        if (metaInfo != null && metaInfo.isPresent()) {
+    void putMeta(List<FileInfo> fileInfos) {
+        List<FileInfo> fileInfosToUpdate = fileInfos.stream()
+                .filter(Objects::nonNull)
+                .filter(it -> it.getMetaInfo() != null)
+                .filter(it -> it.getMetaInfo().isPresent())
+                .collect(Collectors.toList());
+
+        if (!fileInfosToUpdate.isEmpty()) {
             synchronized (updateMapLock) { //TODO check
-                positionsAndSizesByNames.put(fileName, metaInfo);
+                for (FileInfo fileInfo : fileInfosToUpdate) {
+                    positionsAndSizesByNames.put(fileInfo.getName(), fileInfo.getMetaInfo());
+                }
             }
         }
     }

@@ -4,7 +4,6 @@ import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
@@ -14,7 +13,6 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -65,8 +63,8 @@ class InFileFileStore { //Extends FileStore
             initializeFromFile();
     }
 
-    synchronized MetaInfo saveContent(String fileName, String content) throws IOException {
-        MetaInfo metaInfo = addMeta(fileName, content);
+    synchronized List<FileInfo> saveContent(String fileName, String content) throws IOException {
+        List<FileInfo> fileInfoToUpdates = addMeta(fileName, content);
 
         ByteBuffer buff = ByteBuffer.wrap((content + "\n").getBytes(StandardCharsets.UTF_8));
 
@@ -74,7 +72,7 @@ class InFileFileStore { //Extends FileStore
         channel.force(false);
         endPos = channel.size();
 
-        return metaInfo;
+        return fileInfoToUpdates;
     }
 
     String readContent(long pos, int size) throws IOException {
@@ -140,11 +138,13 @@ class InFileFileStore { //Extends FileStore
         metaPos = new AtomicLong((metaHeader + "\n" + metaContent.trim()).getBytes().length);
     }
 
-    private MetaInfo addMeta(String fileName, String content) throws IOException {
+    private List<FileInfo> addMeta(String fileName, String content) throws IOException {
         byte[] metaContent = buildMetaContent(fileName, content);
+        List<FileInfo> fileInfosToUpdate = new ArrayList<>();
 
         if (needToIncreaseMetaSpace(metaContent.length)) {
-            rebuildAndIncreaseMetaSpace();
+            fileInfosToUpdate.addAll(rebuildAndIncreaseMetaSpace());
+            metaContent = buildMetaContent(fileName, content);
         }
 
         ByteBuffer buff = ByteBuffer.wrap(metaContent);
@@ -158,20 +158,21 @@ class InFileFileStore { //Extends FileStore
 
         metaPos.getAndAdd(metaContent.length);
 
-        return new MetaInfo(start, size, isPresentPosition);
+        fileInfosToUpdate.add(new FileInfo(fileName, new MetaInfo(start, size, isPresentPosition)));
+        return fileInfosToUpdate;
     }
 
-    private synchronized void rebuildAndIncreaseMetaSpace() throws IOException { //TODO synchronized?
+    private synchronized List<FileInfo> rebuildAndIncreaseMetaSpace() throws IOException { //TODO synchronized?
         String bufFileName = file.toString() + ".buf";
         Path bufFile = Paths.get(bufFileName);
 
+        bufFile = Files.createFile(bufFile);
         FileChannel bufChannel = getFileChannel(bufFile);
 
         int newMetaBytes = metaBytesCount << 1;
         String newStartState = getStartMetaContent(newMetaBytes);
 
         int newMetaPos = (metaHeader + "\n").getBytes().length;
-        long newEndPos = newStartState.getBytes().length;
 
         ByteBuffer buff = ByteBuffer.wrap(newStartState.getBytes(StandardCharsets.UTF_8));
         bufChannel.write(buff);
@@ -185,25 +186,49 @@ class InFileFileStore { //Extends FileStore
             allMatches.add(m.group(0));
         }
 
-        List<String> metaInfosToStore = allMatches.stream()
+        List<String> metaInfos = allMatches.stream()
                 .filter(info -> {
                     String state = info.substring(info.length() - 2, info.length() - 1);
                     return state.equals("A");
                 })
                 .collect(Collectors.toList());
 
-        for (String info : metaInfosToStore) {
+        List<String> metaInfosToStore = new ArrayList<>();
+        List<FileInfo> fileInfosToUpdate = new ArrayList<>();
+        long metaSpaceIncreaseDiff = newMetaBytes - metaBytesCount;
+        long isPresentFlagPos = newMetaPos;
+        for (String info : metaInfos) {
             String[] mas = info.split(",");
 
-            long start = Long.parseLong(mas[1]);
+            String fileName = mas[0].substring(2, mas[0].length() - 1);
+            long oldStart = Long.parseLong(mas[1]);
             int size = Integer.parseInt(mas[2]);
+            String state = mas[3].substring(0, mas[3].length() - 1);
 
-            String content = readContent(start, size) + "\n";
+            String content = readContent(oldStart, size) + "\n";
             byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
             buff = ByteBuffer.wrap(contentBytes);
+
+            long newStart = bufChannel.position();
             bufChannel.write(buff);
 
-            newEndPos += contentBytes.length;
+//            newEndPos += contentBytes.length;
+
+            String curFileMeta = "{\"" + fileName + "\"," + newStart + "," + size + "," + state + "}";
+            metaInfosToStore.add(curFileMeta);
+
+            isPresentFlagPos += curFileMeta.substring(0, curFileMeta.length() - 2).getBytes().length;
+
+            fileInfosToUpdate.add(new FileInfo(
+                    fileName,
+                    new MetaInfo(
+                            newStart,
+                            size,
+                            isPresentFlagPos
+                    )
+            ));
+
+            isPresentFlagPos += curFileMeta.substring(curFileMeta.length() - 2).getBytes().length;
         }
 
         String metaContentToStore = String.join("", metaInfosToStore);
@@ -212,6 +237,8 @@ class InFileFileStore { //Extends FileStore
         bufChannel.force(false);
 
         this.channel.close();
+
+        long newEndPos = bufChannel.size();
         bufChannel.close();
 
         Files.move(bufFile, Paths.get(this.file.toString()), REPLACE_EXISTING);
@@ -220,24 +247,20 @@ class InFileFileStore { //Extends FileStore
         this.channel = getFileChannel(this.file)
                 .position(newEndPos);
 
-        metaPos = new AtomicLong(metaContentToStore.length());
+        metaPos = new AtomicLong(newMetaPos + metaContentToStore.length());
         endPos = newEndPos;
         metaBytesCount = newMetaBytes;
+
+        return fileInfosToUpdate;
     }
 
     private byte[] buildMetaContent(String fileName, String content) {
-        StringBuilder metaContent = new StringBuilder();
-//        if (!positionsAndSizesByNames.isEmpty()) {
-//            metaContent.append(";");
-//        }
+        String metaContent = "{\"" + fileName + "\"," +
+                endPos + "," +
+                content.getBytes().length +
+                ",A}";
 
-        metaContent
-                .append("{\"").append(fileName).append("\",")
-                .append(endPos).append(",")
-                .append(content.getBytes().length)
-                .append(",A}");
-
-        return metaContent.toString().getBytes(StandardCharsets.UTF_8);
+        return metaContent.getBytes(StandardCharsets.UTF_8);
     }
 
     private boolean needToIncreaseMetaSpace(int metaContentSize) {
