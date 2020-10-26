@@ -70,13 +70,13 @@ public class InFileFileSystem { //extends FileSystem {
     }
 
     public String readFile(String fileName) {
-        MetaInfo meta = storeView.getMeta(fileName);
-
-        if (meta == null || !meta.isPresent()) {
-            throw new RuntimeException("No file '" + fileName + "' found");
-        }
-
         try {
+            MetaInfo meta = storeView.getMeta(fileName);
+
+            if (meta == null || !meta.isPresent()) {
+                throw new RuntimeException("No file '" + fileName + "' found");
+            }
+
             return store.readContent(meta.getStartPosition(), meta.getSize());
         } catch (Exception e) {
             throw new ReadFileException(fileName, e);
