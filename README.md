@@ -4,18 +4,18 @@ TODO:
 - store size and position in file (++++)
 - delete file content in file
 - sync in-memory collections with file content (++++)
-- check and refactor closeable resources (++--)
+- check and refactor closeable resources (+++-)
 - check and refactor synchronized parts
-- add ability of creating system from existent file (++++)
+- add ability of creating system from existing file (++++)
 - refactor buffers
 - add logger (++++)
 - add lombok (++++)
-- add File lock
+- add File lock (----)
 - set JDK 11 up (++++)
 - add extend meta space algo (++++)
-- add static-sized store impl
-- refactor structure for 'Prod' quality (+---)
-- improve delete by working with meta space
+- add static-sized store impl (----)
+- refactor structure for 'Prod' quality (++--)
+- improve delete by working with meta space (++++)
 - add some tests and refactor them (++--)
 
 - check is it 'Prod' quality? :)

@@ -7,7 +7,6 @@ import per.demo.exception.*;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -16,56 +15,84 @@ public class InFileFileSystem { //extends FileSystem {
 
     @Getter
     private final String name;
-    private final InFileFileStore fileStore;
 
-    public void createFile(String name, String content) {
+    private final InFileFileStore store;
+    private final InFileFileStoreView storeView;
+
+    public void createFile(String fileName, String content) {
+        MetaInfo meta = storeView.getMeta(fileName);
+        if (meta != null && meta.isPresent()) {
+            throw new CreateFileException("File '" + fileName + "' already exists");
+        }
+
+        MetaInfo metaInfo;
         try {
-            fileStore.addContent(name, content);
+            metaInfo = store.saveContent(fileName, content);
         } catch (Exception e) {
             throw new CreateFileException(e);
         }
+
+        storeView.putMeta(fileName, metaInfo);
     }
 
-    public void updateFile(String name, String newContent) {
+    public void updateFile(String fileName, String newContent) {
+        deleteFile(fileName);
+
+        MetaInfo metaInfo;
         try {
-            fileStore.delete(name);
-            fileStore.addContent(name, newContent);
+             metaInfo = store.saveContent(fileName, newContent);
         } catch (Exception e) {
             throw new UpdateFileException(e);
         }
+
+        storeView.putMeta(fileName, metaInfo);
     }
 
-    public void deleteFile(String name) {
+    public void deleteFile(String fileName) {
+        MetaInfo meta = storeView.getMeta(fileName);
+
+        if (meta == null || !meta.isPresent()) {
+            throw new DeleteFileException("No file '" + fileName + "' found");
+        }
+
         try {
-            fileStore.delete(name);
+            store.setDeletedMetaFlag(meta.getPresentPosition());
         } catch (Exception e) {
             throw new DeleteFileException(e);
         }
+
+        storeView.remove(fileName);
     }
 
-    public String readFile(String name) {
+    public String readFile(String fileName) {
+        MetaInfo meta = storeView.getMeta(fileName);
+
+        if (meta == null || !meta.isPresent()) {
+            throw new ReadFileException("No file '" + fileName + "' found");
+        }
+
         try {
-            return fileStore.read(name);
+            return store.readContent(meta.getStartPosition(), meta.getSize());
         } catch (Exception e) {
-            throw new ReadFileException(e);
+            throw new ReadFileException(fileName, e);
         }
     }
 
     public List<String> allFileNames() {
-        return fileStore.getPositionsAndSizesByNames()
+        return storeView.getMap()
                 .entrySet().stream()
                 .filter(it -> it.getValue().isPresent())
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
     }
 
-    public ConcurrentMap<String, MetaInfo> getMap() { //TODO immutable
-        return fileStore.getPositionsAndSizesByNames();
+    public Map<String, MetaInfo> getMap() {
+        return storeView.getMap();
     }
 
     void destroy() {
         try {
-            fileStore.destroy();
+            store.destroy();
         } catch (Exception e) {
             throw new DestroyFileSystemException(e);
         }

@@ -1,7 +1,5 @@
 package per.demo;
 
-import lombok.AccessLevel;
-import lombok.Getter;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 
@@ -13,11 +11,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -32,17 +29,13 @@ class InFileFileStore { //Extends FileStore
     private final String metaDelimiter;
     private int metaBytesCount;
 
-    @Getter(AccessLevel.PACKAGE)
-    private ConcurrentMap<String, MetaInfo> positionsAndSizesByNames = new ConcurrentHashMap<>();
-
     private Path file;
     private FileChannel channel;
-    private RandomAccessFile fin;
 
     private final Object closeLock = new Object();
     private volatile boolean open = true;
 
-    private volatile AtomicLong metaPos;
+    private AtomicLong metaPos;
     private volatile long endPos;
 
     @SneakyThrows
@@ -52,21 +45,19 @@ class InFileFileStore { //Extends FileStore
         metaDelimiter = configuration.getMetaDelimiter();
         metaBytesCount = configuration.getMetaBytesCount();
 
-        Path p = Paths.get(fileName);
+        Path file = Paths.get(fileName);
 
         boolean fileExists = false;
-        if (!Files.exists(p)) {
-            file = Files.createFile(p);
+        if (!Files.exists(file)) {
+            this.file = Files.createFile(file);
         } else {
             fileExists = true;
-            file = p;
+            this.file = file;
         }
 
-        fin = new RandomAccessFile(p.toFile(), "rwd");
-        channel = fin.getChannel();
-        if (channel == null) {
-            throw new RuntimeException("Couldn't open channel");
-        }
+        this.channel = getFileChannel(this.file); //TODO check
+
+//    channel = new RandomAccessFile(this.file.toFile(), "rwd").getChannel(); //TODO check
 
         if (!fileExists)
             initialize();
@@ -74,44 +65,35 @@ class InFileFileStore { //Extends FileStore
             initializeFromFile();
     }
 
-    synchronized void addContent(String fileName, String content) throws IOException {
-        addMeta(fileName, content);
+    synchronized MetaInfo saveContent(String fileName, String content) throws IOException {
+        MetaInfo metaInfo = addMeta(fileName, content);
 
         ByteBuffer buff = ByteBuffer.wrap((content + "\n").getBytes(StandardCharsets.UTF_8));
 
         channel.write(buff);
-        channel.force(true);
+        channel.force(false);
         endPos = channel.size();
+
+        return metaInfo;
     }
 
-    String read(String fileName) throws IOException {
-        if (!positionsAndSizesByNames.containsKey(fileName)) {
-            throw new RuntimeException("No file " + fileName + " found");
-        }
-
-        MetaInfo info = positionsAndSizesByNames.get(fileName);
-        long pos = info.getStartPosition();
-        int size = info.getSize();
-        String fileContent;
-
+    String readContent(long pos, int size) throws IOException {
         ByteBuffer buff = ByteBuffer.allocate(size); //TODO refactor
         channel.read(buff, pos);
-        fileContent = new String(buff.array(), StandardCharsets.UTF_8);
 
-        return fileContent;
+        return new String(buff.array(), StandardCharsets.UTF_8);
     }
 
-    synchronized void delete(String fileName) throws IOException {
-        MetaInfo metaInfo = positionsAndSizesByNames.get(fileName);
-
+    synchronized void setDeletedMetaFlag(long presentFlagPosition) throws IOException {
         String content = "D";
-
         ByteBuffer wrap = ByteBuffer.wrap(content.getBytes(StandardCharsets.UTF_8));
 
-        channel.write(wrap, metaInfo.getPresentPosition());
-        channel.force(true);
+        channel.write(wrap, presentFlagPosition);
+        channel.force(false);
+    }
 
-        metaInfo.setPresent(false);
+    synchronized String getMetaContent() throws IOException { //TODO synchronized?
+        return readContent(metaHeaderBytesCount, metaBytesCount);
     }
 
     void destroy() throws IOException {
@@ -120,16 +102,13 @@ class InFileFileStore { //Extends FileStore
                 return;
 
             channel.close();
-            fin.close();
-            Files.delete(file);
+            Files.delete(file); //TODO needed?
             open = false;
         }
     }
 
     private void initialize() throws IOException {
-        String startMetaContent = metaHeader + "\n" +
-                StringUtils.repeat(' ', metaBytesCount) + "\n" +
-                metaDelimiter + "\n"; //TODO optimize?
+        String startMetaContent = getStartMetaContent(metaBytesCount);
 
         metaPos = new AtomicLong((metaHeader + "\n").getBytes().length);
         endPos = startMetaContent.getBytes().length;
@@ -137,6 +116,12 @@ class InFileFileStore { //Extends FileStore
         ByteBuffer buff = ByteBuffer.wrap(startMetaContent.getBytes(StandardCharsets.UTF_8));
         channel.write(buff);
         channel.force(true);
+    }
+
+    private String getStartMetaContent(int metaBytesCount) {
+        return metaHeader + "\n" +
+                StringUtils.repeat(' ', metaBytesCount) + "\n" +
+                metaDelimiter + "\n";
     }
 
     private void initializeFromFile() throws IOException {
@@ -151,32 +136,11 @@ class InFileFileStore { //Extends FileStore
             allMatches.add(m.group(1));
         }
 
-        long[] isPresentPosition = {(metaHeader + "\n").getBytes().length};
-        allMatches.stream()
-                .map(it -> it.split(","))
-                .forEach(mas -> {
-                    String name = mas[0].substring(1, mas[0].length() - 1);
-                    long start = Long.parseLong(mas[1]);
-                    int size = Integer.parseInt(mas[2]);
-                    String state = mas[3];
-
-
-
-                    if (state.equals("A")) {
-                        isPresentPosition[0] += ("{\"" + name + "\"," + start + "," + size + ",").length();
-
-                        positionsAndSizesByNames.put(name, new MetaInfo(start, size, isPresentPosition[0]));
-
-                        isPresentPosition[0] += ("A};").length();
-                    }
-
-                });
-
         metaBytesCount = metaContent.getBytes().length;
         metaPos = new AtomicLong((metaHeader + "\n" + metaContent.trim()).getBytes().length);
     }
 
-    private void addMeta(String fileName, String content) throws IOException {
+    private MetaInfo addMeta(String fileName, String content) throws IOException {
         byte[] metaContent = buildMetaContent(fileName, content);
 
         if (needToIncreaseMetaSpace(metaContent.length)) {
@@ -192,96 +156,80 @@ class InFileFileStore { //Extends FileStore
 
         long isPresentPosition = metaPos.get() + metaContent.length - 2;
 
-        positionsAndSizesByNames.put(
-                fileName,
-                new MetaInfo(start, size, isPresentPosition)
-        );
-
         metaPos.getAndAdd(metaContent.length);
-    }
 
+        return new MetaInfo(start, size, isPresentPosition);
+    }
 
     private synchronized void rebuildAndIncreaseMetaSpace() throws IOException { //TODO synchronized?
         String bufFileName = file.toString() + ".buf";
-        Path p = Paths.get(bufFileName);
+        Path bufFile = Paths.get(bufFileName);
 
-        RandomAccessFile fin = new RandomAccessFile(p.toFile(), "rwd");
-        FileChannel channel = fin.getChannel();
-        if (channel == null) {
-            throw new RuntimeException("Couldn't open channel");
-        }
-
-        ConcurrentMap<String, MetaInfo> newMap = positionsAndSizesByNames.entrySet().stream()
-                .filter(entry -> entry.getValue().isPresent())
-                .collect(Collectors.toConcurrentMap(Map.Entry::getKey, Map.Entry::getValue));
-
-        StringBuilder metaContent = new StringBuilder("");
+        FileChannel bufChannel = getFileChannel(bufFile);
 
         int newMetaBytes = metaBytesCount << 1;
-        String newStartState = metaHeader + "\n" +
-                StringUtils.repeat(' ', newMetaBytes) + "\n" +
-                metaDelimiter + "\n"; //TODO optimize?
+        String newStartState = getStartMetaContent(newMetaBytes);
 
         int newMetaPos = (metaHeader + "\n").getBytes().length;
         long newEndPos = newStartState.getBytes().length;
 
         ByteBuffer buff = ByteBuffer.wrap(newStartState.getBytes(StandardCharsets.UTF_8));
-        channel.write(buff);
+        bufChannel.write(buff);
 
-        for (Map.Entry<String, MetaInfo> entry : newMap.entrySet()) {
-            String fileName = entry.getKey();
-            int size = entry.getValue().getSize();
+        String oldMeta = readContent(metaHeaderBytesCount, metaBytesCount);
+        List<String> allMatches = new ArrayList<>();
+        Matcher m = Pattern
+                .compile("\\{([^}]+)}")
+                .matcher(oldMeta);
+        while (m.find()) {
+            allMatches.add(m.group(0));
+        }
 
-            metaContent
-                    .append("{\"").append(fileName).append("\",")
-                    .append(newEndPos).append(",")
-                    .append(size)
-                    .append(",A};");
+        List<String> metaInfosToStore = allMatches.stream()
+                .filter(info -> {
+                    String state = info.substring(info.length() - 2, info.length() - 1);
+                    return state.equals("A");
+                })
+                .collect(Collectors.toList());
 
-            String content = read(fileName) + "\n";
+        for (String info : metaInfosToStore) {
+            String[] mas = info.split(",");
+
+            long start = Long.parseLong(mas[1]);
+            int size = Integer.parseInt(mas[2]);
+
+            String content = readContent(start, size) + "\n";
             byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
-
             buff = ByteBuffer.wrap(contentBytes);
-
-            channel.write(buff);
+            bufChannel.write(buff);
 
             newEndPos += contentBytes.length;
         }
 
-        String metaContentToStore = metaContent.toString().substring(0, metaContent.length() - 1);
+        String metaContentToStore = String.join("", metaInfosToStore);
         buff = ByteBuffer.wrap((metaContentToStore).getBytes(StandardCharsets.UTF_8));
-
-        channel.write(buff, newMetaPos);
-        channel.force(true);
+        bufChannel.write(buff, newMetaPos);
+        bufChannel.force(false);
 
         this.channel.close();
-        this.fin.close();
+        bufChannel.close();
 
-        channel.close();
-        fin.close();
+        Files.move(bufFile, Paths.get(this.file.toString()), REPLACE_EXISTING);
 
-        Files.move(p, Paths.get(file.toString()), REPLACE_EXISTING);
+        this.file = Paths.get(this.file.toString());
+        this.channel = getFileChannel(this.file)
+                .position(newEndPos);
 
-        file = Paths.get(file.toString());
-        this.fin = new RandomAccessFile(file.toFile(), "rwd");
-        this.channel = this.fin.getChannel();
-        if (this.channel == null) {
-            throw new RuntimeException("Couldn't open channel");
-        }
-        this.channel.position(newEndPos);
-
-        positionsAndSizesByNames = newMap;
-        open = true;
         metaPos = new AtomicLong(metaContentToStore.length());
         endPos = newEndPos;
         metaBytesCount = newMetaBytes;
     }
 
     private byte[] buildMetaContent(String fileName, String content) {
-        StringBuilder metaContent = new StringBuilder("");
-        if (!positionsAndSizesByNames.isEmpty()) {
-            metaContent.append(";");
-        }
+        StringBuilder metaContent = new StringBuilder();
+//        if (!positionsAndSizesByNames.isEmpty()) {
+//            metaContent.append(";");
+//        }
 
         metaContent
                 .append("{\"").append(fileName).append("\",")
@@ -296,5 +244,9 @@ class InFileFileStore { //Extends FileStore
         int lastPossibleMetaPos = metaHeaderBytesCount + metaBytesCount;
 
         return metaPos.get() + metaContentSize > lastPossibleMetaPos;
+    }
+
+    private FileChannel getFileChannel(Path file) throws IOException {
+        return FileChannel.open(file, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.DSYNC);
     }
 }

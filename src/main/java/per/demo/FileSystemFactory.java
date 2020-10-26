@@ -33,7 +33,11 @@ public final class FileSystemFactory {
             system = INSTANCES.get(name);
 
             if (system == null) {
-                system = new InFileFileSystem(name, new InFileFileStore(name, configuration));
+                system = new InFileFileSystem(
+                        name,
+                        new InFileFileStore(name, configuration),
+                        new InFileFileStoreView()
+                );
                 INSTANCES.put(name, system);
             }
 
