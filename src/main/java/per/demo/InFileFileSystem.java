@@ -3,7 +3,11 @@ package per.demo;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import per.demo.exception.*;
+import per.demo.exception.CreateFileException;
+import per.demo.exception.DeleteFileException;
+import per.demo.exception.DestroyFileSystemException;
+import per.demo.exception.ReadFileException;
+import per.demo.exception.UpdateFileException;
 
 import java.util.List;
 import java.util.Map;
@@ -20,55 +24,56 @@ public class InFileFileSystem { //extends FileSystem {
     private final InFileFileStoreView storeView;
 
     public void createFile(String fileName, String content) {
-        MetaInfo meta = storeView.getMeta(fileName);
-        if (meta != null && meta.isPresent()) {
-            throw new CreateFileException("File '" + fileName + "' already exists");
-        }
-
-        List<FileInfo> metaInfosToUpdate;
         try {
-            metaInfosToUpdate = store.saveContent(fileName, content);
+            MetaInfo meta = storeView.getMeta(fileName);
+            if (meta != null && meta.isPresent()) {
+                throw new RuntimeException("File '" + fileName + "' already exists");
+            }
+
+            List<FileInfo> metaInfosToUpdate = store.saveContent(fileName, content);
+
+            storeView.putMeta(metaInfosToUpdate);
         } catch (Exception e) {
             throw new CreateFileException(e);
         }
-
-        storeView.putMeta(metaInfosToUpdate);
     }
 
     public void updateFile(String fileName, String newContent) {
-        deleteFile(fileName);
-
-        List<FileInfo> fileInfosToUpdate;
         try {
-            fileInfosToUpdate = store.saveContent(fileName, newContent);
+            synchronized (storeView) {
+                deleteFile(fileName);
+
+                List<FileInfo> fileInfosToUpdate = store.saveContent(fileName, newContent);
+
+                storeView.putMeta(fileInfosToUpdate);
+            }
         } catch (Exception e) {
+            log.error("for content {}", newContent);
             throw new UpdateFileException(e);
         }
-
-        storeView.putMeta(fileInfosToUpdate);
     }
 
     public void deleteFile(String fileName) {
-        MetaInfo meta = storeView.getMeta(fileName);
-
-        if (meta == null || !meta.isPresent()) {
-            throw new DeleteFileException("No file '" + fileName + "' found");
-        }
-
         try {
+            MetaInfo meta = storeView.getMeta(fileName);
+
+            if (meta == null || !meta.isPresent()) {
+                throw new RuntimeException("No file '" + fileName + "' found");
+            }
+
             store.setDeletedMetaFlag(meta.getPresentPosition());
+
+            storeView.remove(fileName);
         } catch (Exception e) {
             throw new DeleteFileException(e);
         }
-
-        storeView.remove(fileName);
     }
 
     public String readFile(String fileName) {
         MetaInfo meta = storeView.getMeta(fileName);
 
         if (meta == null || !meta.isPresent()) {
-            throw new ReadFileException("No file '" + fileName + "' found");
+            throw new RuntimeException("No file '" + fileName + "' found");
         }
 
         try {
@@ -88,6 +93,10 @@ public class InFileFileSystem { //extends FileSystem {
 
     public Map<String, MetaInfo> getMap() {
         return storeView.getMap();
+    }
+
+    public boolean contains(String fileName) {
+        return storeView.contains(fileName);
     }
 
     void destroy() {
