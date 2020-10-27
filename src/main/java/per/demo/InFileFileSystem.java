@@ -14,21 +14,24 @@ import java.util.stream.Collectors;
 /**
  * Main object for control the fileSystem from client.
  * The object is thread-safe and works with two other abstract parts:
+ * <pre>
  * - {@linkplain InFileFileStore} -- implementation of data layer of system;
- * - {@linkplain InFileFileStoreView} -- in-memory view of stored files meta data.
+ * - {@linkplain InFileFileStoreView} -- in-memory view of stored files meta data. </pre>
  *
  * There are five main public methods:
+ * <pre>
  * - {@linkplain #createFile(String, String)} -- create a new file with content
  * - {@linkplain #updateFile(String, String)} -- update already created file with new content
  * - {@linkplain #deleteFile(String)} -- delete already existing file
  * - {@linkplain #readFile(String)} -- read the content of a specific file
- * - {@linkplain #close()} -- close closeable nio.FileChannel resource {@linkplain InFileFileStore#close()}
+ * - {@linkplain #close()} -- close closeable nio.FileChannel resource {@linkplain InFileFileStore#close()} </pre>
  *
  * And four additional public methods:
+ * <pre>
  * - {@linkplain #allFileNames()} -- get List of existing file names
  * - {@linkplain #getMap()} -- get Map model of Store view
  * - {@linkplain #contains(String)} -- check whether the file system contains file by specific name
- * - {@linkplain #isOpen()} -- check whether the file system is open (closable resource is still open)
+ * - {@linkplain #isOpen()} -- check whether the file system is open (closable resource is still open) </pre>
  */
 @RequiredArgsConstructor
 public class InFileFileSystem {
@@ -151,8 +154,8 @@ public class InFileFileSystem {
 
     /**
      * Close internal closable resource store {@linkplain InFileFileStore}.
-     * After that we can't read or store content into using this instance of file system -> We should create a new instance
-     * using {@linkplain FileSystemFactory} methods.
+     * After that we can't read or store content using this instance of file system, so we should create a new instance
+     * for it using {@linkplain FileSystemFactory} methods.
      */
     public void close() {
         try {
