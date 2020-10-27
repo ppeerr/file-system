@@ -1,13 +1,10 @@
 package per.demo;
 
 import lombok.SneakyThrows;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.Validate;
 import per.demo.model.Configuration;
 import per.demo.model.FileInfo;
 import per.demo.model.MetaInfo;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
@@ -23,6 +20,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import static per.demo.utils.MetaInfoUtils.getInitialMetaContent;
+import static per.demo.utils.MetaInfoUtils.needToIncreaseMetaSpace;
 import static per.demo.validator.ExistingFileValidator.checkMetaDataLines;
 
 class InFileFileStore {
@@ -65,10 +64,8 @@ class InFileFileStore {
             initializeFromFile();
     }
 
-    synchronized List<FileInfo> saveContent(String fileName, String content) throws IOException {
-        Validate.isTrue(StringUtils.isNotBlank(fileName), "fileName can't be blank");
-        Validate.isTrue(StringUtils.isNotBlank(content), "content can't be blank");
-
+    @SneakyThrows
+    synchronized List<FileInfo> saveContent(String fileName, String content) {
         List<FileInfo> fileInfoToUpdates = addMeta(fileName, content);
 
         ByteBuffer buff = ByteBuffer.wrap((content + "\n").getBytes(StandardCharsets.UTF_8));
@@ -80,14 +77,16 @@ class InFileFileStore {
         return fileInfoToUpdates;
     }
 
-    String readContent(long pos, int size) throws IOException {
+    @SneakyThrows
+    String readContent(long pos, int size) {
         ByteBuffer buff = ByteBuffer.allocate(size);
         channel.read(buff, pos);
 
         return new String(buff.array(), StandardCharsets.UTF_8);
     }
 
-    synchronized void setDeletedMetaFlag(long presentFlagPosition) throws IOException {
+    @SneakyThrows
+    synchronized void setDeletedMetaFlag(long presentFlagPosition) {
         String content = "D";
         ByteBuffer wrap = ByteBuffer.wrap(content.getBytes(StandardCharsets.UTF_8));
 
@@ -95,11 +94,12 @@ class InFileFileStore {
         channel.force(false);
     }
 
-    String getMetaContent() throws IOException {
+    String getMetaContent() {
         return readContent(metaHeaderBytesCount, metaBytesCount);
     }
 
-    void close() throws IOException {
+    @SneakyThrows
+    void close() {
         synchronized (closeLock) {
             if (!open)
                 return;
@@ -117,24 +117,21 @@ class InFileFileStore {
         return file.toString();
     }
 
-    private void initialize() throws IOException {
-        String startMetaContent = getStartMetaContent(metaBytesCount);
+    @SneakyThrows
+    private void initialize() {
+        String initialMetaContent = getInitialMetaContent(metaHeader, metaBytesCount, metaDelimiter);
+        byte[] initialMetaContentBytes = initialMetaContent.getBytes(StandardCharsets.UTF_8);
 
         metaPos = new AtomicLong((metaHeader + "\n").getBytes().length);
-        endPos = startMetaContent.getBytes().length;
+        endPos = initialMetaContentBytes.length;
 
-        ByteBuffer buff = ByteBuffer.wrap(startMetaContent.getBytes(StandardCharsets.UTF_8));
+        ByteBuffer buff = ByteBuffer.wrap(initialMetaContentBytes);
         channel.write(buff);
         channel.force(true);
     }
 
-    private String getStartMetaContent(int metaBytesCount) {
-        return metaHeader + "\n" +
-                StringUtils.repeat(' ', metaBytesCount) + "\n" +
-                metaDelimiter + "\n";
-    }
-
-    private void initializeFromFile() throws IOException {
+    @SneakyThrows
+    private void initializeFromFile() {
         List<String> metaDataLines = Files.lines(file)
                 .limit(3)
                 .collect(Collectors.toList());
@@ -143,22 +140,25 @@ class InFileFileStore {
         String metaContent = metaDataLines.get(1);
 
         metaBytesCount = metaContent.getBytes().length;
-        metaPos = new AtomicLong((metaHeader + "\n" + metaContent.trim()).getBytes().length);
+
+        int initialMetaPos = (metaHeader + "\n" + metaContent.trim()).getBytes().length;
+        metaPos = new AtomicLong(initialMetaPos);
     }
 
-    private List<FileInfo> addMeta(String fileName, String content) throws IOException {
+    @SneakyThrows
+    private List<FileInfo> addMeta(String fileName, String content) {
         byte[] contentBytes = content.getBytes();
         byte[] metaContentBytes = buildMetaContent(fileName, contentBytes);
         List<FileInfo> fileInfosToUpdate = new ArrayList<>();
 
-        while (needToIncreaseMetaSpace(metaContentBytes.length)) {
+        while (needToIncreaseMetaSpace(metaHeaderBytesCount, metaBytesCount, metaContentBytes.length, metaPos.get())) {
             fileInfosToUpdate = new ArrayList<>(rebuildAndIncreaseMetaSpace());
             metaContentBytes = buildMetaContent(fileName, contentBytes);
         }
 
         ByteBuffer buff = ByteBuffer.wrap(metaContentBytes);
         channel.write(buff, metaPos.get());
-        channel.force(true);
+        channel.force(false);
 
         long start = channel.size();
         int size = contentBytes.length;
@@ -171,7 +171,8 @@ class InFileFileStore {
         return fileInfosToUpdate;
     }
 
-    private synchronized List<FileInfo> rebuildAndIncreaseMetaSpace() throws IOException {
+    @SneakyThrows
+    private synchronized List<FileInfo> rebuildAndIncreaseMetaSpace() {
         String bufFileName = file.toString() + ".buf";
         Path bufFile = Paths.get(bufFileName);
 
@@ -179,7 +180,7 @@ class InFileFileStore {
         FileChannel bufChannel = getFileChannel(bufFile);
 
         int newMetaBytes = metaBytesCount << 1;
-        String newStartState = getStartMetaContent(newMetaBytes);
+        String newStartState = getInitialMetaContent(metaHeader, newMetaBytes, metaDelimiter);
 
         int newMetaPos = (metaHeader + "\n").getBytes().length;
 
@@ -269,13 +270,8 @@ class InFileFileStore {
         return metaContent.getBytes(StandardCharsets.UTF_8);
     }
 
-    private boolean needToIncreaseMetaSpace(int metaContentSize) {
-        int lastPossibleMetaPos = metaHeaderBytesCount + metaBytesCount;
-
-        return metaPos.get() + metaContentSize > lastPossibleMetaPos;
-    }
-
-    private FileChannel getFileChannel(Path file) throws IOException {
+    @SneakyThrows
+    private FileChannel getFileChannel(Path file) {
         return FileChannel.open(file, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.DSYNC);
     }
 }
