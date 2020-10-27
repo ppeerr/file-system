@@ -20,7 +20,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
-import static per.demo.ExistingFileValidator.checkMetaDataLines;
+import static per.demo.validator.ExistingFileValidator.checkMetaDataLines;
 
 class InFileFileStore {
 
@@ -78,7 +78,7 @@ class InFileFileStore {
     }
 
     String readContent(long pos, int size) throws IOException {
-        ByteBuffer buff = ByteBuffer.allocate(size); //TODO refactor
+        ByteBuffer buff = ByteBuffer.allocate(size);
         channel.read(buff, pos);
 
         return new String(buff.array(), StandardCharsets.UTF_8);

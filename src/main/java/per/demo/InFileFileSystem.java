@@ -2,20 +2,13 @@ package per.demo;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.Validate;
-import per.demo.exception.CreateFileException;
-import per.demo.exception.DeleteFileException;
-import per.demo.exception.DestroyFileSystemException;
-import per.demo.exception.ReadFileException;
-import per.demo.exception.UpdateFileException;
+import per.demo.exception.*;
+import per.demo.validator.UploadFileContentValidator;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@Slf4j
 @RequiredArgsConstructor
 public class InFileFileSystem {
 
@@ -27,8 +20,7 @@ public class InFileFileSystem {
 
     public void createFile(String fileName, String content) {
         try {
-            Validate.isTrue(StringUtils.isNotBlank(fileName), "fileName can't be blank");
-            Validate.isTrue(StringUtils.isNotBlank(content), "content can't be blank");
+            UploadFileContentValidator.check(fileName, content);
 
             MetaInfo meta = storeView.getMeta(fileName);
             if (meta != null && meta.isPresent()) {
@@ -45,8 +37,7 @@ public class InFileFileSystem {
 
     public void updateFile(String fileName, String newContent) {
         try {
-            Validate.isTrue(StringUtils.isNotBlank(fileName), "fileName can't be blank");
-            Validate.isTrue(StringUtils.isNotBlank(newContent), "newContent can't be blank");
+            UploadFileContentValidator.check(fileName, newContent);
 
             synchronized (storeView) {
                 deleteFile(fileName);
@@ -56,7 +47,6 @@ public class InFileFileSystem {
                 storeView.putMeta(fileInfosToUpdate);
             }
         } catch (Exception e) {
-            log.error("for content {}", newContent);
             throw new UpdateFileException(e);
         }
     }

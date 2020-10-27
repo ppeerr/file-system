@@ -1,4 +1,6 @@
-package per.demo
+package per.demo.validator
+
+import per.demo.AbstractSpecification
 
 class ExistingFileValidatorTest extends AbstractSpecification {
 
