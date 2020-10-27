@@ -11,6 +11,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Main object for control the fileSystem from client.
+ * The object is thread-safe and works with two other abstract parts:
+ * - {@linkplain InFileFileStore} -- implementation of data layer of system;
+ * - {@linkplain InFileFileStoreView} -- in-memory view of stored files meta data.
+ *
+ * There are five main public methods:
+ * - {@linkplain #createFile(String, String)} -- create a new file with content
+ * - {@linkplain #updateFile(String, String)} -- update already created file with new content
+ * - {@linkplain #deleteFile(String)} -- delete already existing file
+ * - {@linkplain #readFile(String)} -- read the content of a specific file
+ * - {@linkplain #close()} -- close closeable nio.FileChannel resource {@linkplain InFileFileStore#close()}
+ *
+ * And four additional public methods:
+ * - {@linkplain #allFileNames()} -- get List of existing file names
+ * - {@linkplain #getMap()} -- get Map model of Store view
+ * - {@linkplain #contains(String)} -- check whether the file system contains file by specific name
+ * - {@linkplain #isOpen()} -- check whether the file system is open (closable resource is still open)
+ */
 @RequiredArgsConstructor
 public class InFileFileSystem {
 
@@ -20,6 +39,14 @@ public class InFileFileSystem {
     private final InFileFileStore store;
     private final InFileFileStoreView storeView;
 
+    /**
+     * Create file with specific file name and content. If file with the same file name exists in store view
+     * {@linkplain InFileFileStoreView#getMeta(String)}, then Exception is thrown.
+     * A t first system save meta info and content into store, then update store view.
+     *
+     * @param fileName - not blank string, contains only latin letters and digits
+     * @param content - not blank, length not greater than {@linkplain UploadFileContentValidator#maxContentSizeBytes}
+     */
     public void createFile(String fileName, String content) {
         try {
             UploadFileContentValidator.check(fileName, content);
@@ -37,6 +64,13 @@ public class InFileFileSystem {
         }
     }
 
+    /**
+     * Update file with specific file name replacing by new content. File with @param filename must be existed in system.
+     * At first system delete file, then create new with new content.
+     *
+     * @param fileName - not blank string, contains only latin letters and digits
+     * @param newContent - not blank, length not greater than {@linkplain UploadFileContentValidator#maxContentSizeBytes}
+     */
     public void updateFile(String fileName, String newContent) {
         try {
             UploadFileContentValidator.check(fileName, newContent);
@@ -53,6 +87,12 @@ public class InFileFileSystem {
         }
     }
 
+    /**
+     * Delete file by specific file name. File with @param filename must be existed in system.
+     * At first system delete file in store, then delete from store view.
+     *
+     * @param fileName - name of existed file
+     */
     public void deleteFile(String fileName) {
         try {
             MetaInfo meta = storeView.getMeta(fileName);
@@ -69,6 +109,12 @@ public class InFileFileSystem {
         }
     }
 
+    /**
+     * Read file content by specific file name. File with @param filename must be existed in system.
+     *
+     * @param fileName - name of existed file
+     * @return content of specific file
+     */
     public String readFile(String fileName) {
         try {
             MetaInfo meta = storeView.getMeta(fileName);
@@ -103,6 +149,11 @@ public class InFileFileSystem {
         return store.isOpen();
     }
 
+    /**
+     * Close internal closable resource store {@linkplain InFileFileStore}.
+     * After that we can't read or store content into using this instance of file system -> We should create a new instance
+     * using {@linkplain FileSystemFactory} methods.
+     */
     public void close() {
         try {
             store.close();

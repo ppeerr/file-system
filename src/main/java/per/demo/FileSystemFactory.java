@@ -7,6 +7,32 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+/**
+ * Static factory methods for creating new InFile FileSystem instances. File systems may either be created
+ * with a default configuration or by providinga specific {@link Configuration}.
+ *
+ * <p>Examples:
+ *
+ * <pre>
+ *   // A file system with the default configuration
+ *   FileSystem fileSystem = FileSystemFactory.newFileSystem(); </pre>
+ *
+ * <p>Additionally, the file system can be customized by creating a custom
+ * {@link Configuration}. A new configuration can be created by lombok {@link Configuration#builder()}.
+ * See {@link Configuration.ConfigurationBuilder} for what can be configured.
+ *
+ * <p>Examples:
+ *
+ * <pre>
+ *   // Create with a custom configuration
+ *   FileSystem fileSystem = FileSystemFactory.newFileSystem("specificName", Configuration.builder()
+ *                 .metaHeader("START")
+ *                 .metaDelimiter("--END--")
+ *                 .metaBytesCount(5)
+ *                 .build());  </pre>
+ *
+ * @author Anton Kupreychik
+ */
 public final class FileSystemFactory {
 
     private static final String EXTENSION = ".iffs";
@@ -16,14 +42,32 @@ public final class FileSystemFactory {
     private FileSystemFactory() {
     }
 
+    /**
+     * Creates a new InFile file system with a {@linkplain Configuration#defaultConfiguration()
+     * default configuration} and random generated name {@linkplain FileSystemFactory#newRandomFileSystemName()}.
+     */
     public static InFileFileSystem newFileSystem() {
         return newFileSystem(newRandomFileSystemName());
     }
 
+    /**
+     * Creates a new InFile file system with a {@linkplain Configuration#defaultConfiguration()
+     * default configuration} but specific name.
+     */
     public static InFileFileSystem newFileSystem(String name) {
         return newFileSystem(name, Configuration.defaultConfiguration());
     }
 
+    /**
+     * Creates a new inFile file system with the given configuration and name.
+     *
+     * <p>The factory return the same instance of InFileFileSystem for same file in OS if this instance has not been
+     * closed by {@linkplain FileSystemFactory#close(String name)} or {@linkplain InFileFileSystem#close()}.
+     *
+     * If there is already an InFileFileSystem instance created by the factory, but it was closed previously by
+     * instance method {@linkplain InFileFileSystem#close()}, then factory create new instance for the old file name
+     * and create the InFileFileStore from existing file {@linkplain InFileFileStore#initializeFromFile()} ()}
+     */
     public static InFileFileSystem newFileSystem(String name, Configuration configuration) {
         try {
             name += EXTENSION;

@@ -10,6 +10,18 @@ java {
     targetCompatibility = JavaVersion.VERSION_11
 }
 
+tasks.withType<Jar> {
+    manifest {
+        attributes["Multi-Release"] = "true"
+    }
+    from(sourceSets["main"].allSource)
+    from(sourceSets["test"].allSource)
+    {
+        from(tasks["javadoc"]).into("/javadoc")
+    }
+
+}
+
 repositories {
     jcenter()
 }
