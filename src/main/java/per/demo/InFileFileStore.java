@@ -2,6 +2,7 @@ package per.demo;
 
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Validate;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -19,6 +20,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import static per.demo.ExistingFileValidator.checkMetaDataLines;
 
 class InFileFileStore {
 
@@ -44,7 +46,6 @@ class InFileFileStore {
         metaBytesCount = configuration.getMetaBytesCount();
 
         Path file = Paths.get(fileName);
-
         boolean fileExists = false;
         if (!Files.exists(file)) {
             this.file = Files.createFile(file);
@@ -62,6 +63,9 @@ class InFileFileStore {
     }
 
     synchronized List<FileInfo> saveContent(String fileName, String content) throws IOException {
+        Validate.isTrue(StringUtils.isNotBlank(fileName), "fileName can't be blank");
+        Validate.isTrue(StringUtils.isNotBlank(content), "content can't be blank");
+
         List<FileInfo> fileInfoToUpdates = addMeta(fileName, content);
 
         ByteBuffer buff = ByteBuffer.wrap((content + "\n").getBytes(StandardCharsets.UTF_8));
@@ -128,8 +132,12 @@ class InFileFileStore {
     }
 
     private void initializeFromFile() throws IOException {
-        //todo validation
-        String metaContent = Files.readAllLines(file).get(1); //TODO optimize
+        List<String> metaDataLines = Files.lines(file)
+                .limit(3)
+                .collect(Collectors.toList());
+        checkMetaDataLines(metaDataLines, metaHeader, metaBytesCount, metaDelimiter);
+
+        String metaContent = metaDataLines.get(1);
 
         metaBytesCount = metaContent.getBytes().length;
         metaPos = new AtomicLong((metaHeader + "\n" + metaContent.trim()).getBytes().length);

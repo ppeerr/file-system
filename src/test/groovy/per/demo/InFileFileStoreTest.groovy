@@ -10,7 +10,7 @@ class InFileFileStoreTest extends AbstractSpecification {
 
     def "should create FileSystem with valid from existent file"() {
         given:
-        def name = "FROM_FILE"
+        def name = "FROM_FILE_store"
         def file = Files.createFile(Paths.get(name + EXTENSION))
         Files.writeString(file, FILE_SYSTEM_CONTENT, StandardOpenOption.WRITE)
 

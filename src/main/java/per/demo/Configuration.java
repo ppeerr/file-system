@@ -3,6 +3,7 @@ package per.demo;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 
 @Getter
@@ -19,9 +20,9 @@ public class Configuration {
     private final int metaBytesCount;
 
     private Configuration(String metaHeader, String metaDelimiter, int metaBytesCount) {
-        Validate.isTrue(metaHeader != null, "metaHeader must not be null");
-        Validate.isTrue(metaDelimiter != null, "metaDelimiter must not be null");
-        Validate.isTrue(metaBytesCount > 0, "metaBytesCount should be positive int");
+        Validate.isTrue(StringUtils.isNotBlank(metaHeader), "metaHeader must not be blank");
+        Validate.isTrue(StringUtils.isNotBlank(metaDelimiter), "metaDelimiter must not be blank");
+        Validate.isTrue(metaBytesCount > 0, "metaBytesCount must be positive int");
 
         this.metaHeader = metaHeader;
         this.metaDelimiter = metaDelimiter;

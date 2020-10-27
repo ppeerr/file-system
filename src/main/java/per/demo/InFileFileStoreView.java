@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 public class InFileFileStoreView {
 
     private ConcurrentMap<String, MetaInfo> positionsAndSizesByNames = new ConcurrentHashMap<>();
-    private static final Object updateMapLock = new Object();
+    private final Object updateMapLock = new Object();
 
     boolean contains(String fileName) {
         return positionsAndSizesByNames.containsKey(fileName);
@@ -32,11 +32,13 @@ public class InFileFileStoreView {
                 .filter(it -> it.getMetaInfo().isPresent())
                 .collect(Collectors.toList());
 
-        if (!fileInfosToUpdate.isEmpty()) {
-            synchronized (updateMapLock) { //TODO check
-                for (FileInfo fileInfo : fileInfosToUpdate) {
-                    positionsAndSizesByNames.put(fileInfo.getName(), fileInfo.getMetaInfo());
-                }
+        if (fileInfosToUpdate.isEmpty()) {
+            return;
+        }
+
+        synchronized (updateMapLock) {
+            for (FileInfo fileInfo : fileInfosToUpdate) {
+                positionsAndSizesByNames.put(fileInfo.getName(), fileInfo.getMetaInfo());
             }
         }
     }
@@ -44,10 +46,12 @@ public class InFileFileStoreView {
     void remove(String fileName) {
         MetaInfo metaInfo = positionsAndSizesByNames.get(fileName);
 
-        if (metaInfo != null && metaInfo.isPresent()) {
-            synchronized (updateMapLock) { //TODO check
-                positionsAndSizesByNames.remove(fileName);
-            }
+        if (metaInfo == null || !metaInfo.isPresent()) {
+            return;
+        }
+
+        synchronized (updateMapLock) {
+            positionsAndSizesByNames.remove(fileName);
         }
     }
 

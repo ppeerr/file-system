@@ -10,7 +10,7 @@ public final class FileSystemFactory {
 
     private static final String EXTENSION = ".iffs";
     private static final ConcurrentMap<String, InFileFileSystem> INSTANCES = new ConcurrentHashMap<>();
-    private static final Object updateInstancesLock = new Object();
+    private static final Object UPDATE_INSTANCES_LOCK = new Object();
 
     private FileSystemFactory() {
     }
@@ -32,7 +32,7 @@ public final class FileSystemFactory {
                 return INSTANCES.get(name);
             }
 
-            synchronized (updateInstancesLock) {
+            synchronized (UPDATE_INSTANCES_LOCK) {
                 system = INSTANCES.get(name);
 
                 if (system == null) {

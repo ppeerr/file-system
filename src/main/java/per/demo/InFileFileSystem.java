@@ -3,6 +3,8 @@ package per.demo;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Validate;
 import per.demo.exception.CreateFileException;
 import per.demo.exception.DeleteFileException;
 import per.demo.exception.DestroyFileSystemException;
@@ -25,6 +27,9 @@ public class InFileFileSystem {
 
     public void createFile(String fileName, String content) {
         try {
+            Validate.isTrue(StringUtils.isNotBlank(fileName), "fileName can't be blank");
+            Validate.isTrue(StringUtils.isNotBlank(content), "content can't be blank");
+
             MetaInfo meta = storeView.getMeta(fileName);
             if (meta != null && meta.isPresent()) {
                 throw new RuntimeException("File '" + fileName + "' already exists");
@@ -40,6 +45,9 @@ public class InFileFileSystem {
 
     public void updateFile(String fileName, String newContent) {
         try {
+            Validate.isTrue(StringUtils.isNotBlank(fileName), "fileName can't be blank");
+            Validate.isTrue(StringUtils.isNotBlank(newContent), "newContent can't be blank");
+
             synchronized (storeView) {
                 deleteFile(fileName);
 
