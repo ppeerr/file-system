@@ -8,14 +8,14 @@ import lombok.RequiredArgsConstructor;
 public class MetaInfo {
     private final long startPosition;
     private final int size;
-    private final long presentPosition;
+    private final long presentFlagPosition;
 
     private boolean present = true;
 
     public MetaInfo(MetaInfo from) {
         this.startPosition = from.getStartPosition();
         this.size = from.getSize();
-        this.presentPosition = from.getPresentPosition();
+        this.presentFlagPosition = from.getPresentFlagPosition();
         this.present = from.isPresent();
     }
 }

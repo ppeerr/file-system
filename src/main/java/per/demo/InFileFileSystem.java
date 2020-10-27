@@ -61,7 +61,7 @@ public class InFileFileSystem {
                 throw new RuntimeException("No file '" + fileName + "' found");
             }
 
-            store.setDeletedMetaFlag(meta.getPresentPosition());
+            store.setDeletedMetaFlag(meta.getPresentFlagPosition());
 
             storeView.remove(fileName);
         } catch (Exception e) {
