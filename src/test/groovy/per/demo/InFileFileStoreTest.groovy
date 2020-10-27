@@ -1,5 +1,7 @@
 package per.demo
 
+import per.demo.model.Configuration
+
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardOpenOption

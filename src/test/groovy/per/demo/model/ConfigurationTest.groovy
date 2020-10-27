@@ -1,4 +1,4 @@
-package per.demo
+package per.demo.model
 
 import spock.lang.Specification
 import spock.lang.Unroll

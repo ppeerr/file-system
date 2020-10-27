@@ -3,6 +3,9 @@ package per.demo;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
+import per.demo.model.Configuration;
+import per.demo.model.FileInfo;
+import per.demo.model.MetaInfo;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -144,30 +147,31 @@ class InFileFileStore {
     }
 
     private List<FileInfo> addMeta(String fileName, String content) throws IOException {
-        byte[] metaContent = buildMetaContent(fileName, content);
+        byte[] contentBytes = content.getBytes();
+        byte[] metaContentBytes = buildMetaContent(fileName, contentBytes);
         List<FileInfo> fileInfosToUpdate = new ArrayList<>();
 
-        while (needToIncreaseMetaSpace(metaContent.length)) {
+        while (needToIncreaseMetaSpace(metaContentBytes.length)) {
             fileInfosToUpdate = new ArrayList<>(rebuildAndIncreaseMetaSpace());
-            metaContent = buildMetaContent(fileName, content);
+            metaContentBytes = buildMetaContent(fileName, contentBytes);
         }
 
-        ByteBuffer buff = ByteBuffer.wrap(metaContent);
+        ByteBuffer buff = ByteBuffer.wrap(metaContentBytes);
         channel.write(buff, metaPos.get());
         channel.force(true);
 
         long start = channel.size();
-        int size = content.getBytes().length;
+        int size = contentBytes.length;
 
-        long isPresentPosition = metaPos.get() + metaContent.length - 2;
+        long isPresentPosition = metaPos.get() + metaContentBytes.length - 2;
 
-        metaPos.getAndAdd(metaContent.length);
+        metaPos.getAndAdd(metaContentBytes.length);
 
         fileInfosToUpdate.add(new FileInfo(fileName, new MetaInfo(start, size, isPresentPosition)));
         return fileInfosToUpdate;
     }
 
-    private synchronized List<FileInfo> rebuildAndIncreaseMetaSpace() throws IOException { //TODO synchronized?
+    private synchronized List<FileInfo> rebuildAndIncreaseMetaSpace() throws IOException {
         String bufFileName = file.toString() + ".buf";
         Path bufFile = Paths.get(bufFileName);
 
@@ -256,10 +260,10 @@ class InFileFileStore {
         return fileInfosToUpdate;
     }
 
-    private byte[] buildMetaContent(String fileName, String content) {
+    private byte[] buildMetaContent(String fileName, byte[] contentBytes) {
         String metaContent = "{\"" + fileName + "\"," +
                 endPos + "," +
-                content.getBytes().length +
+                contentBytes.length +
                 ",A}";
 
         return metaContent.getBytes(StandardCharsets.UTF_8);

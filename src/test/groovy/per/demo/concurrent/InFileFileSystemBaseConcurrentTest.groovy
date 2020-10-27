@@ -12,20 +12,6 @@ class InFileFileSystemBaseConcurrentTest extends AbstractSpecification {
     private InFileFileSystem systemOne
     private InFileFileSystem systemTwo
 
-    def "should return the same references when create FileSystems for the same files"() {
-        given:
-        def name = UUID.randomUUID().toString()
-
-        when:
-        systemOne = FileSystemFactory.newFileSystem(name)
-        systemTwo = FileSystemFactory.newFileSystem(name)
-
-        then:
-        systemOne
-        systemOne.is(systemTwo)
-        Files.exists(Paths.get(name + EXTENSION))
-    }
-
     def "should be able to create files when called from two threads"() {
         given:
         systemOne = FileSystemFactory.newFileSystem()

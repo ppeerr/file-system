@@ -1,5 +1,8 @@
 package per.demo;
 
+import per.demo.model.FileInfo;
+import per.demo.model.MetaInfo;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

@@ -1,4 +1,4 @@
-package per.demo;
+package per.demo.model;
 
 import lombok.Builder;
 import lombok.Getter;

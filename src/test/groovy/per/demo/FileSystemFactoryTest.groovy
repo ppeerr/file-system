@@ -7,30 +7,64 @@ import java.nio.file.Paths
 
 class FileSystemFactoryTest extends AbstractSpecification {
 
-    private InFileFileSystem system
+    private InFileFileSystem systemOne
+    private InFileFileSystem systemTwo
 
-    def "should create InFIleFileSystem"() {
+    def "should create InFileFileSystem"() {
         when:
-        system = FileSystemFactory.newFileSystem()
+        systemOne = FileSystemFactory.newFileSystem()
 
         then:
-        Path p = Paths.get(system.getName())
+        Path p = Paths.get(systemOne.getName())
         Files.exists(p)
     }
 
-    def "should create InFIleFileSystem with specific name"() {
+    def "should create InFileFileSystem with specific name"() {
         given:
         String name = "koko"
 
         when:
-        system = FileSystemFactory.newFileSystem(name)
+        systemOne = FileSystemFactory.newFileSystem(name)
 
         then:
         Path p = Paths.get(name + EXTENSION)
         Files.exists(p)
     }
 
+    def "should return the same references when create FileSystems for the same files"() {
+        given:
+        def name = UUID.randomUUID().toString()
+
+        when:
+        systemOne = FileSystemFactory.newFileSystem(name)
+        systemTwo = FileSystemFactory.newFileSystem(name)
+
+        then:
+        systemOne
+        systemOne.is(systemTwo)
+        Files.exists(Paths.get(name + EXTENSION))
+    }
+
+    def "should return new SystemTwo when create FileSystem for the same file after SystemOne closed"() {
+        given:
+        def name = UUID.randomUUID().toString()
+
+        when:
+        systemOne = FileSystemFactory.newFileSystem(name)
+        systemOne.close()
+        systemTwo = FileSystemFactory.newFileSystem(name)
+
+        then:
+        systemOne
+        systemTwo
+        !systemOne.is(systemTwo)
+        !systemOne.isOpen()
+        systemTwo.isOpen()
+        Files.exists(Paths.get(name + EXTENSION))
+    }
+
     void cleanup() {
-        destroySystemIfNotNull(system)
+        destroySystemIfNotNull(systemOne)
+        destroySystemIfNotNull(systemTwo)
     }
 }

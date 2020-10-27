@@ -3,6 +3,8 @@ package per.demo;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import per.demo.exception.*;
+import per.demo.model.FileInfo;
+import per.demo.model.MetaInfo;
 import per.demo.validator.UploadFileContentValidator;
 
 import java.util.List;
@@ -101,7 +103,7 @@ public class InFileFileSystem {
         return store.isOpen();
     }
 
-    void close() {
+    public void close() {
         try {
             store.close();
         } catch (Exception e) {

@@ -1,6 +1,7 @@
 package per.demo;
 
 import per.demo.exception.FileSystemCreationException;
+import per.demo.model.Configuration;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,14 +29,14 @@ public final class FileSystemFactory {
             name += EXTENSION;
 
             InFileFileSystem system = INSTANCES.get(name);
-            if (system != null) {
+            if (system != null && system.isOpen()) {
                 return INSTANCES.get(name);
             }
 
             synchronized (UPDATE_INSTANCES_LOCK) {
                 system = INSTANCES.get(name);
 
-                if (system == null) {
+                if (system == null || !system.isOpen()) {
                     system = new InFileFileSystem(
                             name,
                             new InFileFileStore(name, configuration),

@@ -1,6 +1,6 @@
 package per.demo.exception;
 
-import per.demo.Configuration;
+import per.demo.model.Configuration;
 
 public class FileSystemCreationException extends RuntimeException {
     public FileSystemCreationException(String name, Configuration configuration, Throwable cause) {

@@ -1,5 +1,7 @@
 package per.demo
 
+import per.demo.model.Configuration
+
 class InFileFileSystemRebuildTest extends AbstractSpecification {
 
     private static final NAME = "kekek_rebuild"
