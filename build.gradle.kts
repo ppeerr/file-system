@@ -19,8 +19,9 @@ tasks.withType<Jar> {
     {
         from(tasks["javadoc"]).into("/javadoc")
     }
-
 }
+
+version = "0.1.0"
 
 repositories {
     jcenter()
