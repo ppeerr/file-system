@@ -49,7 +49,7 @@ public class InFileFileStoreView {
     void remove(String fileName) {
         MetaInfo metaInfo = positionsAndSizesByNames.get(fileName);
 
-        if (metaInfo == null || !metaInfo.isPresent()) {
+        if (isMetaInfoDoesNotExist(metaInfo)) {
             return;
         }
 
@@ -60,5 +60,9 @@ public class InFileFileStoreView {
 
     Map<String, MetaInfo> getMap() {
         return new HashMap<>(positionsAndSizesByNames);
+    }
+
+    private boolean isMetaInfoDoesNotExist(MetaInfo metaInfo) {
+        return metaInfo == null || !metaInfo.isPresent();
     }
 }

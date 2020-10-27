@@ -25,7 +25,7 @@ public class InFileFileSystem {
             UploadFileContentValidator.check(fileName, content);
 
             MetaInfo meta = storeView.getMeta(fileName);
-            if (meta != null && meta.isPresent()) {
+            if (isMetaExists(meta)) {
                 throw new RuntimeException("File '" + fileName + "' already exists");
             }
 
@@ -57,7 +57,7 @@ public class InFileFileSystem {
         try {
             MetaInfo meta = storeView.getMeta(fileName);
 
-            if (meta == null || !meta.isPresent()) {
+            if (isMetaDoesNotExist(meta)) {
                 throw new RuntimeException("No file '" + fileName + "' found");
             }
 
@@ -73,7 +73,7 @@ public class InFileFileSystem {
         try {
             MetaInfo meta = storeView.getMeta(fileName);
 
-            if (meta == null || !meta.isPresent()) {
+            if (isMetaDoesNotExist(meta)) {
                 throw new RuntimeException("No file '" + fileName + "' found");
             }
 
@@ -109,5 +109,13 @@ public class InFileFileSystem {
         } catch (Exception e) {
             throw new DestroyFileSystemException(e);
         }
+    }
+
+    private boolean isMetaExists(MetaInfo meta) {
+        return meta != null && meta.isPresent();
+    }
+
+    private boolean isMetaDoesNotExist(MetaInfo meta) {
+        return meta == null || !meta.isPresent();
     }
 }

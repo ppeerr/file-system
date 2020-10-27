@@ -29,14 +29,14 @@ public final class FileSystemFactory {
             name += EXTENSION;
 
             InFileFileSystem system = INSTANCES.get(name);
-            if (system != null && system.isOpen()) {
+            if (isSystemExistsAndOpen(system)) {
                 return INSTANCES.get(name);
             }
 
             synchronized (UPDATE_INSTANCES_LOCK) {
                 system = INSTANCES.get(name);
 
-                if (system == null || !system.isOpen()) {
+                if (isSystemDoesNotExistOrClosed(system)) {
                     system = new InFileFileSystem(
                             name,
                             new InFileFileStore(name, configuration),
@@ -64,5 +64,13 @@ public final class FileSystemFactory {
 
     private static String newRandomFileSystemName() {
         return UUID.randomUUID().toString();
+    }
+
+    private static boolean isSystemExistsAndOpen(InFileFileSystem system) {
+        return system != null && system.isOpen();
+    }
+
+    private static boolean isSystemDoesNotExistOrClosed(InFileFileSystem system) {
+        return system == null || !system.isOpen();
     }
 }
