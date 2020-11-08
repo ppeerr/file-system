@@ -7,6 +7,7 @@ import per.demo.model.FileInfo;
 import per.demo.model.MetaInfo;
 import per.demo.validator.UploadFileContentValidator;
 
+import java.io.Closeable;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -17,7 +18,7 @@ import java.util.stream.Collectors;
  * <pre>
  * - {@linkplain InFileFileStore} -- implementation of data layer of system;
  * - {@linkplain InFileFileStoreView} -- in-memory view of stored files meta data. </pre>
- *
+ * <p>
  * There are five main public methods:
  * <pre>
  * - {@linkplain #createFile(String, String)} -- create a new file with content
@@ -25,7 +26,7 @@ import java.util.stream.Collectors;
  * - {@linkplain #deleteFile(String)} -- delete already existing file
  * - {@linkplain #readFile(String)} -- read the content of a specific file
  * - {@linkplain #close()} -- close closeable nio.FileChannel resource {@linkplain InFileFileStore#close()} </pre>
- *
+ * <p>
  * And four additional public methods:
  * <pre>
  * - {@linkplain #allFileNames()} -- get List of existing file names
@@ -34,7 +35,7 @@ import java.util.stream.Collectors;
  * - {@linkplain #isOpen()} -- check whether the file system is open (closable resource is still open) </pre>
  */
 @RequiredArgsConstructor
-public class InFileFileSystem {
+public class InFileFileSystem implements Closeable {
 
     @Getter
     private final String name;
@@ -48,7 +49,7 @@ public class InFileFileSystem {
      * A t first system save meta info and content into store, then update store view.
      *
      * @param fileName - not blank string, contains only latin letters and digits
-     * @param content - not blank, length not greater than {@linkplain UploadFileContentValidator#maxContentSizeBytes}
+     * @param content  - not blank, length not greater than {@linkplain UploadFileContentValidator#maxContentSizeBytes}
      */
     public void createFile(String fileName, String content) {
         try {
@@ -59,9 +60,7 @@ public class InFileFileSystem {
                 throw new RuntimeException("File '" + fileName + "' already exists");
             }
 
-            List<FileInfo> metaInfosToUpdate = store.saveContent(fileName, content);
-
-            storeView.putMeta(metaInfosToUpdate);
+            save(fileName, content);
         } catch (Exception e) {
             throw new CreateFileException(e);
         }
@@ -71,20 +70,15 @@ public class InFileFileSystem {
      * Update file with specific file name replacing by new content. File with @param filename must be existed in system.
      * At first system delete file, then create new with new content.
      *
-     * @param fileName - not blank string, contains only latin letters and digits
+     * @param fileName   - not blank string, contains only latin letters and digits
      * @param newContent - not blank, length not greater than {@linkplain UploadFileContentValidator#maxContentSizeBytes}
      */
     public void updateFile(String fileName, String newContent) {
         try {
             UploadFileContentValidator.check(fileName, newContent);
 
-            synchronized (storeView) {
-                deleteFile(fileName);
-
-                List<FileInfo> fileInfosToUpdate = store.saveContent(fileName, newContent);
-
-                storeView.putMeta(fileInfosToUpdate);
-            }
+            deleteFile(fileName);
+            save(fileName, newContent);
         } catch (Exception e) {
             throw new UpdateFileException(e);
         }
@@ -104,9 +98,7 @@ public class InFileFileSystem {
                 throw new RuntimeException("No file '" + fileName + "' found");
             }
 
-            store.setDeletedMetaFlag(meta.getPresentFlagPosition());
-
-            storeView.remove(fileName);
+            remove(fileName, meta);
         } catch (Exception e) {
             throw new DeleteFileException(e);
         }
@@ -161,7 +153,23 @@ public class InFileFileSystem {
         try {
             store.close();
         } catch (Exception e) {
-            throw new DestroyFileSystemException(e);
+            throw new DestroyFileSystemException(e); //TODO check
+        }
+    }
+
+    private void save(String fileName, String content) {
+        synchronized (storeView) {
+            List<FileInfo> fileInfosToUpdate = store.saveContent(fileName, content);
+
+            storeView.putMeta(fileInfosToUpdate);
+        }
+    }
+
+    private void remove(String fileName, MetaInfo meta) {
+        synchronized (storeView) {
+            store.setDeletedMetaFlag(meta.getPresentFlagPosition());
+
+            storeView.remove(fileName);
         }
     }
 

@@ -48,7 +48,7 @@ class InFileFileSystemUpdateConcurrentTest extends AbstractSpecification {
         when:
         taskList.add(executorService.submit({ systemOne.updateFile(fileName, "one") }))
         taskList.add(executorService.submit({ //slow task
-            TimeUnit.MILLISECONDS.sleep(100)
+            TimeUnit.MILLISECONDS.sleep(200)
             systemOne.updateFile(fileName, "two")
         }))
 

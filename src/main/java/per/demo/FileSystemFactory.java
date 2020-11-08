@@ -61,12 +61,12 @@ public final class FileSystemFactory {
     /**
      * Creates a new inFile file system with the given configuration and name.
      *
-     * <p>The factory return the same instance of InFileFileSystem for same file in OS if this instance has not been
-     * closed by {@linkplain FileSystemFactory#close(String name)} or {@linkplain InFileFileSystem#close()}.
+     * <p>The factory return the same instance of InFileFileSystem for the same file in OS if this instance has not been
+     * closed by {@linkplain InFileFileSystem#close()}.
      *
      * If there is already an InFileFileSystem instance created by the factory, but it was closed previously by
      * instance method {@linkplain InFileFileSystem#close()}, then factory create new instance for the old file name
-     * and create the InFileFileStore from existing file {@linkplain InFileFileStore#initializeFromFile()} ()}
+     * and create the InFileFileStore from existing file {@linkplain InFileFileStore#initializeFromFile()}}
      */
     public static InFileFileSystem newFileSystem(String name, Configuration configuration) {
         try {

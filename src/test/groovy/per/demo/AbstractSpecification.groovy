@@ -16,10 +16,12 @@ abstract class AbstractSpecification extends Specification {
     protected static final String CONTENT1 = "111111111111111111111111111111111111111111111111111111111111"
     protected static final String CONTENT2 = "222222222222222222222222222222222222222222222222222222222222"
 
-    protected static destroySystemIfNotNull(InFileFileSystem system) {
-        if (system != null && system.isOpen()) {
-            FileSystemFactory.close(system.getName())
-            Files.delete(Paths.get(system.getName()))
+    protected static destroySystemIfNotNull(InFileFileSystem... systems) {
+        for (InFileFileSystem system : systems) {
+            if (system != null && system.isOpen()) {
+                system.close()
+                Files.delete(Paths.get(system.getName()))
+            }
         }
     }
 
@@ -28,6 +30,5 @@ abstract class AbstractSpecification extends Specification {
             store.close()
             Files.delete(Paths.get(store.getFilePath()))
         }
-
     }
 }

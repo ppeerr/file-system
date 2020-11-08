@@ -57,7 +57,6 @@ class InFileFileSystemConcurrentTest extends AbstractSpecification {
     }
 
     void cleanup() {
-        destroySystemIfNotNull(systemOne)
-        destroySystemIfNotNull(systemTwo)
+        destroySystemIfNotNull(systemOne, systemTwo)
     }
 }

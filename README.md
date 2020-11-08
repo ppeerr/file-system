@@ -40,7 +40,7 @@ done:
 
 Getting started
 ---------------
-The latest release is [0.1.0]((https://github.com/ppeerr/file-system/releases/tag/v0.1.0).)
+The latest release is [0.1.0](https://github.com/ppeerr/file-system/releases/tag/v0.1.0)
 
 Basic use
 ---------
