@@ -2,13 +2,11 @@ package per.demo.model;
 
 import lombok.Builder;
 import lombok.Getter;
-import lombok.ToString;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 
 @Getter
 @Builder
-@ToString
 public class Configuration {
 
     private static final String DEFAULT_META_HEADER = "START";
@@ -19,6 +17,14 @@ public class Configuration {
     private final String metaDelimiter;
     private final int metaBytesCount;
 
+    public static Configuration defaultConfiguration() {
+        return new Configuration(
+                DEFAULT_META_HEADER,
+                DEFAULT_META_DELIMITER,
+                DEFAULT_META_BYTES_COUNT
+        );
+    }
+
     private Configuration(String metaHeader, String metaDelimiter, int metaBytesCount) {
         Validate.isTrue(StringUtils.isNotBlank(metaHeader), "metaHeader must not be blank");
         Validate.isTrue(StringUtils.isNotBlank(metaDelimiter), "metaDelimiter must not be blank");
@@ -27,13 +33,5 @@ public class Configuration {
         this.metaHeader = metaHeader;
         this.metaDelimiter = metaDelimiter;
         this.metaBytesCount = metaBytesCount;
-    }
-
-    public static Configuration defaultConfiguration() {
-        return new Configuration(
-                DEFAULT_META_HEADER,
-                DEFAULT_META_DELIMITER,
-                DEFAULT_META_BYTES_COUNT
-        );
     }
 }

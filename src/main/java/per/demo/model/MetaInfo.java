@@ -1,16 +1,21 @@
 package per.demo.model;
 
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
+import lombok.Getter;
 
-@Data
-@RequiredArgsConstructor
+@Getter
 public class MetaInfo {
     private final long startPosition;
     private final int size;
     private final long presentFlagPosition;
 
-    private boolean present = true;
+    private final boolean present;
+
+    public MetaInfo(long startPosition, int size, long presentFlagPosition) {
+        this.startPosition = startPosition;
+        this.size = size;
+        this.presentFlagPosition = presentFlagPosition;
+        this.present = true;
+    }
 
     public MetaInfo(MetaInfo from) {
         this.startPosition = from.getStartPosition();

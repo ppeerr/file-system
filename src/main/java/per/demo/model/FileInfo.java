@@ -1,16 +1,14 @@
 package per.demo.model;
 
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
+import lombok.Getter;
 
-@Data
-@RequiredArgsConstructor
+@Getter
 public class FileInfo {
     private final String name;
     private final MetaInfo metaInfo;
 
-    public FileInfo(FileInfo from) {
-        this.name = from.getName();
-        this.metaInfo = new MetaInfo(from.getMetaInfo());
+    public FileInfo(String name, MetaInfo metaInfo) {
+        this.name = name;
+        this.metaInfo = metaInfo;
     }
 }
