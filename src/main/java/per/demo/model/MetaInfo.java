@@ -5,12 +5,12 @@ import lombok.Getter;
 @Getter
 public class MetaInfo {
     private final long startPosition;
-    private final int size;
+    private final long size;
     private final long presentFlagPosition;
 
     private final boolean present;
 
-    public MetaInfo(long startPosition, int size, long presentFlagPosition) {
+    public MetaInfo(long startPosition, long size, long presentFlagPosition) {
         this.startPosition = startPosition;
         this.size = size;
         this.presentFlagPosition = presentFlagPosition;

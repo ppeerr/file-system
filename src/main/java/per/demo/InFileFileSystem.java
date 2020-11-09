@@ -124,6 +124,20 @@ public class InFileFileSystem implements Closeable {
         }
     }
 
+    public File getFile(String fileName) {
+        try {
+            MetaInfo meta = storeView.getMeta(fileName);
+
+            if (isMetaDoesNotExist(meta)) {
+                throw new RuntimeException("No file '" + fileName + "' found");
+            }
+
+            return new File(store, meta);
+        } catch (Exception e) {
+            throw new ReadFileException(fileName, e);
+        }
+    }
+
     public List<String> allFileNames() {
         return storeView.getMap()
                 .entrySet().stream()

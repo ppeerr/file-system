@@ -5,6 +5,8 @@ import per.demo.model.Configuration;
 import per.demo.model.FileInfo;
 import per.demo.model.MetaInfo;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
@@ -24,6 +26,7 @@ import static per.demo.validator.ExistingFileValidator.checkMetaDataLines;
 class InFileFileStore {
 
     private static final String BUF_FILE_SUFFIX = ".buf";
+    private static final int BUFFER_SIZE = 1024;
 
     private final String metaHeader;
     private final int metaHeaderBytesCount;
@@ -65,7 +68,8 @@ class InFileFileStore {
 
     @SneakyThrows
     synchronized List<FileInfo> saveContent(String fileName, String content) {
-        List<FileInfo> fileInfoToUpdates = addMeta(fileName, content);
+        long contentSize = content.getBytes(StandardCharsets.UTF_8).length;
+        List<FileInfo> fileInfoToUpdates = addMeta(fileName, contentSize);
 
         ByteBuffer buff = ByteBuffer.wrap((content + "\n").getBytes(StandardCharsets.UTF_8));
 
@@ -77,11 +81,64 @@ class InFileFileStore {
     }
 
     @SneakyThrows
-    String readContent(long pos, int size) {
-        ByteBuffer buff = ByteBuffer.allocate(size);
-        channel.read(buff, pos);
+    synchronized List<FileInfo> saveContent(String fileName, ByteArrayInputStream contentStream) {
+        byte[] buffer;
+        long contentSize = 0;
 
-        return new String(buff.array(), StandardCharsets.UTF_8);
+        do {
+            buffer = contentStream.readNBytes(BUFFER_SIZE);
+
+            if (buffer.length > 0) {
+                ByteBuffer buff = ByteBuffer.wrap(buffer);
+
+                channel.write(buff);
+                contentSize += buffer.length;
+            }
+        } while (buffer.length > 0);
+
+        ByteBuffer buff = ByteBuffer.wrap(("\n").getBytes(StandardCharsets.UTF_8));
+        channel.write(buff);
+
+        channel.force(false);
+        endPos = channel.size();
+
+        return addMeta(fileName, contentSize);
+    }
+
+    @SneakyThrows
+    String readContent(long pos, long size) {
+        return new String(readContentBytes(pos, size), StandardCharsets.UTF_8);
+    }
+
+    @SneakyThrows
+    byte[] readContentBytes(long pos, long size) {
+        int bufferSize;
+        if (size > Integer.MAX_VALUE) {
+            bufferSize = BUFFER_SIZE;
+        } else {
+            bufferSize = Math.min(BUFFER_SIZE, (int) size);
+        }
+
+        ByteBuffer buff = ByteBuffer.allocate(bufferSize);
+        long currentPos = pos;
+
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            while (channel.read(buff, currentPos) > 0) {
+                out.write(buff.array(), 0, buff.position());
+                currentPos += buff.position(); //TODO check
+                buff.clear();
+
+                int remaining = (int) ((pos + size) - currentPos);
+                if (remaining <= 0)
+                    break;
+                if (remaining < bufferSize) {
+                    bufferSize = remaining;
+                    buff = ByteBuffer.allocate(bufferSize);
+                }
+            }
+
+            return out.toByteArray();
+        }
     }
 
     @SneakyThrows
@@ -145,19 +202,18 @@ class InFileFileStore {
     }
 
     @SneakyThrows
-    private List<FileInfo> addMeta(String fileName, String content) {
-        byte[] contentBytes = content.getBytes();
-        byte[] metaContentBytes = buildMetaContent(fileName, contentBytes);
+    private List<FileInfo> addMeta(String fileName, long contentLength) {
+        byte[] metaContentBytes = buildMetaContent(fileName, contentLength);
         List<FileInfo> fileInfosToUpdate = new ArrayList<>();
 
         while (needToIncreaseMetaSpace(metaHeaderBytesCount, metaBytesCount, metaContentBytes.length, metaPos.get())) {
             fileInfosToUpdate = new ArrayList<>(increaseMetaSpaceAndRebuild());
-            metaContentBytes = buildMetaContent(fileName, contentBytes);
+            metaContentBytes = buildMetaContent(fileName, contentLength);
         }
 
         writeMeta(metaContentBytes);
 
-        fileInfosToUpdate.add(getNewFileInfoToUpdate(fileName, contentBytes, metaContentBytes));
+        fileInfosToUpdate.add(getNewFileInfoToUpdate(fileName, contentLength, metaContentBytes));
         return fileInfosToUpdate;
     }
 
@@ -250,18 +306,17 @@ class InFileFileStore {
     }
 
     @SneakyThrows
-    private FileInfo getNewFileInfoToUpdate(String fileName, byte[] contentBytes, byte[] metaContentBytes) {
+    private FileInfo getNewFileInfoToUpdate(String fileName, long contentLength, byte[] metaContentBytes) {
         long start = channel.size();
-        int size = contentBytes.length;
         long presentFlagPosition = metaPos.get() + metaContentBytes.length - 2;
 
-        return new FileInfo(fileName, new MetaInfo(start, size, presentFlagPosition));
+        return new FileInfo(fileName, new MetaInfo(start, contentLength, presentFlagPosition));
     }
 
-    private byte[] buildMetaContent(String fileName, byte[] contentBytes) {
+    private byte[] buildMetaContent(String fileName, long contentLength) {
         String metaContent = "{\"" + fileName + "\"," +
                 endPos + "," +
-                contentBytes.length +
+                contentLength +
                 ",A}";
 
         return metaContent.getBytes(StandardCharsets.UTF_8);
