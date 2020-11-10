@@ -12,7 +12,7 @@ public class UploadFileContentValidator {
         checkContent(content);
     }
 
-    private static void checkFileName(String fileName) {
+    public static void checkFileName(String fileName) {
         Validate.isTrue(StringUtils.isNotBlank(fileName), "fileName can't be blank");
         Validate.isTrue(fileName.matches("[a-zA-Z0-9]*"), "fileName must contains only latin letters and numbers");
     }

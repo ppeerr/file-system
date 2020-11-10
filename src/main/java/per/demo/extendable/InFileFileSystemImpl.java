@@ -2,20 +2,14 @@ package per.demo.extendable;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import per.demo.File;
-import per.demo.FileSystemFactory;
-import per.demo.InFileFileStore;
-import per.demo.InFileFileStoreView;
-import per.demo.InFileFileSystem;
-import per.demo.exception.CreateFileException;
-import per.demo.exception.DeleteFileException;
-import per.demo.exception.DestroyFileSystemException;
-import per.demo.exception.ReadFileException;
-import per.demo.exception.UpdateFileException;
+import per.demo.*;
+import per.demo.exception.*;
 import per.demo.model.FileInfo;
 import per.demo.model.MetaInfo;
 import per.demo.validator.UploadFileContentValidator;
 
+import java.io.InputStream;
+import java.nio.channels.ReadableByteChannel;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -51,14 +45,6 @@ public class InFileFileSystemImpl implements InFileFileSystem {
     private final InFileFileStore store;
     private final InFileFileStoreView storeView;
 
-    /**
-     * Create file with specific file name and content. If file with the same file name exists in store view
-     * {@linkplain InFileFileStoreView#getMeta(String)}, then Exception is thrown.
-     * A t first system save meta info and content into store, then update store view.
-     *
-     * @param fileName not blank string, contains only latin letters and digits
-     * @param content  not blank, length not greater than {@linkplain UploadFileContentValidator#maxContentSizeBytes}
-     */
     @Override
     public void createFile(String fileName, String content) {
         try {
@@ -76,14 +62,41 @@ public class InFileFileSystemImpl implements InFileFileSystem {
             throw new CreateFileException(e);
         }
     }
+    @Override
+    public void createFile(String fileName, InputStream contentStream) {
+        try {
+            UploadFileContentValidator.checkFileName(fileName);
 
-    /**
-     * Update file with specific file name replacing by new content. File with @param filename must be existed in system.
-     * At first system delete file, then create new with new content.
-     *
-     * @param fileName   not blank string, contains only latin letters and digits
-     * @param newContent not blank, length not greater than {@linkplain UploadFileContentValidator#maxContentSizeBytes}
-     */
+            MetaInfo meta = storeView.getMeta(fileName);
+            if (isMetaExists(meta)) {
+                throw new RuntimeException("File '" + fileName + "' already exists");
+            }
+
+            synchronized (storeView) {
+                save(fileName, contentStream);
+            }
+        } catch (Exception e) {
+            throw new CreateFileException(e);
+        }
+    }
+    @Override
+    public void createFile(String fileName, ReadableByteChannel contentChannel) {
+        try {
+            UploadFileContentValidator.checkFileName(fileName);
+
+            MetaInfo meta = storeView.getMeta(fileName);
+            if (isMetaExists(meta)) {
+                throw new RuntimeException("File '" + fileName + "' already exists");
+            }
+
+            synchronized (storeView) {
+                save(fileName, contentChannel);
+            }
+        } catch (Exception e) {
+            throw new CreateFileException(e);
+        }
+    }
+
     @Override
     public void updateFile(String fileName, String newContent) {
         try {
@@ -97,6 +110,41 @@ public class InFileFileSystemImpl implements InFileFileSystem {
 
                 remove(fileName, meta);
                 save(fileName, newContent);
+            }
+        } catch (Exception e) {
+            throw new UpdateFileException(e);
+        }
+    }
+    @Override
+    public void updateFile(String fileName, InputStream contentStream) {
+        try {
+            UploadFileContentValidator.checkFileName(fileName);
+
+            synchronized (storeView) {
+                MetaInfo meta = storeView.getMeta(fileName);
+                if (isMetaDoesNotExist(meta)) {
+                    throw new RuntimeException("No file '" + fileName + "' found");
+                }
+
+                remove(fileName, meta);
+                save(fileName, contentStream);
+            }
+        } catch (Exception e) {
+            throw new UpdateFileException(e);
+        }
+    }
+    public void updateFile(String fileName, ReadableByteChannel contentChannel) {
+        try {
+            UploadFileContentValidator.checkFileName(fileName);
+
+            synchronized (storeView) {
+                MetaInfo meta = storeView.getMeta(fileName);
+                if (isMetaDoesNotExist(meta)) {
+                    throw new RuntimeException("No file '" + fileName + "' found");
+                }
+
+                remove(fileName, meta);
+                save(fileName, contentChannel);
             }
         } catch (Exception e) {
             throw new UpdateFileException(e);
@@ -199,6 +247,18 @@ public class InFileFileSystemImpl implements InFileFileSystem {
 
     private void save(String fileName, String content) {
         List<FileInfo> fileInfosToUpdate = store.saveContent(fileName, content);
+
+        storeView.putMeta(fileInfosToUpdate);
+    }
+
+    private void save(String fileName, InputStream contentStream) {
+        List<FileInfo> fileInfosToUpdate = store.saveContent(fileName, contentStream);
+
+        storeView.putMeta(fileInfosToUpdate);
+    }
+
+    private void save(String fileName, ReadableByteChannel contentChannel) {
+        List<FileInfo> fileInfosToUpdate = store.saveContent(fileName, contentChannel);
 
         storeView.putMeta(fileInfosToUpdate);
     }

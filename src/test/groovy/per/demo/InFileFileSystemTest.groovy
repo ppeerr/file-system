@@ -2,6 +2,10 @@ package per.demo
 
 import per.demo.exception.ReadFileException
 
+import java.nio.channels.Channels
+import java.nio.channels.ReadableByteChannel
+import java.nio.charset.StandardCharsets
+
 class InFileFileSystemTest extends AbstractSpecification {
 
     private static final NAME = "kekek2"
@@ -42,6 +46,35 @@ class InFileFileSystemTest extends AbstractSpecification {
         then:
         def fileNames = system.allFileNames()
         fileNames.size() == 8
+    }
+
+    def "should create 1 file from InputStream"() {
+        given:
+        def name = "kek"
+        InputStream targetStream = new ByteArrayInputStream("Hello_world".getBytes())
+
+        when:
+        system.createFile(name, targetStream)
+
+        then:
+        def fileNames = system.allFileNames()
+        fileNames.size() == 1
+        system.readFileToString(name) == "Hello_world"
+    }
+
+    def "should create 1 file from channel"() {
+        given:
+        def name = "kek"
+        InputStream targetStream = new ByteArrayInputStream("Hello_world".getBytes())
+        ReadableByteChannel channel = Channels.newChannel(targetStream)
+
+        when:
+        system.createFile(name, channel)
+
+        then:
+        def fileNames = system.allFileNames()
+        fileNames.size() == 1
+        system.readFileToString(name) == "Hello_world"
     }
 
     def "should delete one file"() {
@@ -90,6 +123,39 @@ class InFileFileSystemTest extends AbstractSpecification {
         system.readFileToString(name) == "hooray!"
     }
 
+    def "should update file via inputStream"() {
+        given:
+        def name = "kek"
+        system.createFile(name, "Hello_world")
+        system.createFile(name + "2", "Hello_world and You!")
+        InputStream targetStream = new ByteArrayInputStream("hooray!".getBytes())
+
+        when:
+        system.updateFile(name, targetStream)
+
+        then:
+        def fileNames = system.allFileNames()
+        fileNames.size() == 2
+        system.readFileToString(name) == "hooray!"
+    }
+
+    def "should update file via Channel"() {
+        given:
+        def name = "kek"
+        system.createFile(name, "Hello_world")
+        system.createFile(name + "2", "Hello_world and You!")
+        InputStream targetStream = new ByteArrayInputStream("hooray!".getBytes())
+        ReadableByteChannel channel = Channels.newChannel(targetStream)
+
+        when:
+        system.updateFile(name, channel)
+
+        then:
+        def fileNames = system.allFileNames()
+        fileNames.size() == 2
+        system.readFileToString(name) == "hooray!"
+    }
+
     def "should fail when try to read non-existent file"() {
         given:
         def name = "kek"
@@ -130,6 +196,67 @@ class InFileFileSystemTest extends AbstractSpecification {
         then:
         file
         file.getName() == name
+    }
+
+    def "should can read content from File"() {
+        given:
+        def name = "kek"
+        system.createFile(name, "Hello_world")
+        system.createFile(name + "2", "Hello_world and You!")
+
+        when:
+        def bytes = system.getFile(name).getBytes()
+
+        then:
+        new String(bytes, StandardCharsets.UTF_8) == "Hello_world"
+    }
+
+    def "should can read part of content from File"() {
+        given:
+        def name = "kek"
+        system.createFile(name, "Hello_world")
+        def neededByteCount = 5L
+        def file = system.getFile(name)
+
+        when:
+        def bytes = file.read(neededByteCount)
+
+        then:
+        new String(bytes, StandardCharsets.UTF_8) == "Hello"
+    }
+
+    def "should can read any part of content from File"() {
+        given:
+        def name = "kek"
+        system.createFile(name, "Hello_world")
+        def neededByteCount = 5L
+        def offset = 6L
+        def file = system.getFile(name)
+
+        when:
+        def bytes = file.read(offset, neededByteCount)
+
+        then:
+        new String(bytes, StandardCharsets.UTF_8) == "world"
+    }
+
+    def "should can read content by bytes from File"() {
+        given:
+        def name = "kek"
+        system.createFile(name, "Hello_world")
+        def file = system.getFile(name)
+
+        when:
+        def result = ""
+        for (int i = 0; i < file.getSize(); i++) {
+            def offset = i
+            def bytes = file.read(offset, 1L)
+
+            result += new String(bytes, StandardCharsets.UTF_8)
+        }
+
+        then:
+        result == "Hello_world"
     }
 
     void cleanup() {

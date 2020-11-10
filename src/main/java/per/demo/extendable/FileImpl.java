@@ -27,6 +27,11 @@ public class FileImpl implements File, Closeable {
     }
 
     @Override
+    public byte[] getBytes() {
+        return read(metaInfo.getSize());
+    }
+
+    @Override
     public byte[] read(long byteCount) {
         return read(0L, byteCount);
     }

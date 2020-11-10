@@ -3,6 +3,8 @@ package per.demo;
 import per.demo.model.MetaInfo;
 
 import java.io.Closeable;
+import java.io.InputStream;
+import java.nio.channels.ReadableByteChannel;
 import java.util.List;
 import java.util.Map;
 
@@ -17,14 +19,29 @@ public interface InFileFileSystem extends Closeable {
      */
     void createFile(String fileName, String content);
 
+    void createFile(String fileName, InputStream contentStream);
+
+    void createFile(String fileName, ReadableByteChannel contentChannel);
+
     /**
      * Update file with specific file name.
-     * File with @param filename must be existed in system.     *
+     * File with @param filename must be existed in system.
      *
      * @param fileName name of new file
      * @param newContent string content
      */
     void updateFile(String fileName, String newContent);
+
+    /**
+     * Update file with specific file name.
+     * File with @param filename must be existed in system.
+     *
+     * @param fileName name of new file
+     * @param contentStream content byte stream
+     */
+    void updateFile(String fileName, InputStream contentStream);
+
+    void updateFile(String fileName, ReadableByteChannel contentChannel);
 
     /**
      * Delete file by specific file name.
