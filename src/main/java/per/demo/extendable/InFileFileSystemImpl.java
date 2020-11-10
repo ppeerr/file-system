@@ -89,12 +89,12 @@ public class InFileFileSystemImpl implements InFileFileSystem {
         try {
             UploadFileContentValidator.check(fileName, newContent);
 
-            MetaInfo meta = storeView.getMeta(fileName);
-            if (isMetaDoesNotExist(meta)) {
-                throw new RuntimeException("No file '" + fileName + "' found");
-            }
-
             synchronized (storeView) {
+                MetaInfo meta = storeView.getMeta(fileName);
+                if (isMetaDoesNotExist(meta)) {
+                    throw new RuntimeException("No file '" + fileName + "' found");
+                }
+
                 remove(fileName, meta);
                 save(fileName, newContent);
             }
