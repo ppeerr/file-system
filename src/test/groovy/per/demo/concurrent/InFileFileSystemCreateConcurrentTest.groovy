@@ -30,11 +30,11 @@ class InFileFileSystemCreateConcurrentTest extends AbstractSpecification {
         taskList.each { it.get() }
 
         then:
-        systemOne.readFile(fileName + 1) == "one"
-        systemOne.readFile(fileName + 2) == "two"
-        systemOne.readFile(fileName + 3) == "three"
-        systemOne.readFile(fileName + 4) == "four"
-        systemOne.readFile(fileName + 5) == "five"
+        systemOne.readFileToString(fileName + 1) == "one"
+        systemOne.readFileToString(fileName + 2) == "two"
+        systemOne.readFileToString(fileName + 3) == "three"
+        systemOne.readFileToString(fileName + 4) == "four"
+        systemOne.readFileToString(fileName + 5) == "five"
 
         where:
         i << (1..10)

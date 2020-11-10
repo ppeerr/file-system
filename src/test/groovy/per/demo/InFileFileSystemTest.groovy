@@ -66,8 +66,8 @@ class InFileFileSystemTest extends AbstractSpecification {
         system.createFile(name + "2", "Hello_world and You!")
 
         when:
-        def file = system.readFile(name)
-        def file2 = system.readFile(name + "2")
+        def file = system.readFileToString(name)
+        def file2 = system.readFileToString(name + "2")
 
         then:
         file == "Hello_world"
@@ -87,7 +87,7 @@ class InFileFileSystemTest extends AbstractSpecification {
         then:
         def fileNames = system.allFileNames()
         fileNames.size() == 2
-        system.readFile(name) == "hooray!"
+        system.readFileToString(name) == "hooray!"
     }
 
     def "should fail when try to read non-existent file"() {
@@ -96,7 +96,7 @@ class InFileFileSystemTest extends AbstractSpecification {
         system.createFile(name, "Hello_world")
 
         when:
-        system.readFile(name + "new")
+        system.readFileToString(name + "new")
 
         then:
         thrown(ReadFileException)
@@ -110,12 +110,26 @@ class InFileFileSystemTest extends AbstractSpecification {
 
         when:
         system.updateFile(name, "Changed")
-        def file = system.readFile(name)
-        def file2 = system.readFile(name + "2")
+        def file = system.readFileToString(name)
+        def file2 = system.readFileToString(name + "2")
 
         then:
         file == "Changed"
         file2 == "Hello_world and You!"
+    }
+
+    def "should return File and then read content"() {
+        given:
+        def name = "kek"
+        system.createFile(name, "Hello_world")
+        system.createFile(name + "2", "Hello_world and You!")
+
+        when:
+        def file = system.getFile(name)
+
+        then:
+        file
+        file.getName() == name
     }
 
     void cleanup() {

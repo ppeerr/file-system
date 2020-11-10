@@ -2,12 +2,12 @@ package per.demo.concurrent
 
 import per.demo.AbstractSpecification
 import per.demo.FileSystemFactory
-import per.demo.InFileFileSystem
+import per.demo.InFileFileSystemImpl
 
 class InFileFileSystemConcurrentTest extends AbstractSpecification {
 
-    private InFileFileSystem systemOne
-    private InFileFileSystem systemTwo
+    private InFileFileSystemImpl systemOne
+    private InFileFileSystemImpl systemTwo
 
     def "should delete files when delete called from two threads"() {
         given:
@@ -30,7 +30,7 @@ class InFileFileSystemConcurrentTest extends AbstractSpecification {
         def names = systemOne.allFileNames()
         names.size() == 1
         names.contains("kek2")
-        systemOne.readFile("kek2") == CONTENT2
+        systemOne.readFileToString("kek2") == CONTENT2
     }
 
     def "should read contents when read called from two threads"() {
@@ -42,8 +42,8 @@ class InFileFileSystemConcurrentTest extends AbstractSpecification {
         when:
         String content2 = ""
         String content1 = ""
-        def thread1 = new Thread({ content2 = systemOne.readFile("kek2") })
-        def thread2 = new Thread({ content1 = systemOne.readFile("kek1") })
+        def thread1 = new Thread({ content2 = systemOne.readFileToString("kek2") })
+        def thread2 = new Thread({ content1 = systemOne.readFileToString("kek1") })
 
         thread1.start()
         thread2.start()

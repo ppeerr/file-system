@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentMap;
 public final class FileSystemFactory {
 
     private static final String EXTENSION = ".iffs";
-    private static final ConcurrentMap<String, InFileFileSystem> INSTANCES = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, InFileFileSystemImpl> INSTANCES = new ConcurrentHashMap<>();
     private static final Object UPDATE_INSTANCES_LOCK = new Object();
 
     private FileSystemFactory() {
@@ -46,7 +46,7 @@ public final class FileSystemFactory {
      * Creates a new InFile file system with a {@linkplain Configuration#defaultConfiguration()
      * default configuration} and random generated name {@linkplain FileSystemFactory#newRandomFileSystemName()}.
      */
-    public static InFileFileSystem newFileSystem() {
+    public static InFileFileSystemImpl newFileSystem() {
         return newFileSystem(newRandomFileSystemName());
     }
 
@@ -54,7 +54,7 @@ public final class FileSystemFactory {
      * Creates a new InFile file system with a {@linkplain Configuration#defaultConfiguration()
      * default configuration} but specific name.
      */
-    public static InFileFileSystem newFileSystem(String name) {
+    public static InFileFileSystemImpl newFileSystem(String name) {
         return newFileSystem(name, Configuration.defaultConfiguration());
     }
 
@@ -62,17 +62,17 @@ public final class FileSystemFactory {
      * Creates a new inFile file system with the given configuration and name.
      *
      * <p>The factory return the same instance of InFileFileSystem for the same file in OS if this instance has not been
-     * closed by {@linkplain InFileFileSystem#close()}.
+     * closed by {@linkplain InFileFileSystemImpl#close()}.
      *
      * If there is already an InFileFileSystem instance created by the factory, but it was closed previously by
-     * instance method {@linkplain InFileFileSystem#close()}, then factory create new instance for the old file name
+     * instance method {@linkplain InFileFileSystemImpl#close()}, then factory create new instance for the old file name
      * and create the InFileFileStore from existing file {@linkplain InFileFileStore#initializeFromFile()}}
      */
-    public static InFileFileSystem newFileSystem(String name, Configuration configuration) {
+    public static InFileFileSystemImpl newFileSystem(String name, Configuration configuration) {
         try {
             name += EXTENSION;
 
-            InFileFileSystem system = INSTANCES.get(name);
+            InFileFileSystemImpl system = INSTANCES.get(name);
             if (isSystemExistsAndOpen(system)) {
                 return INSTANCES.get(name);
             }
@@ -81,7 +81,7 @@ public final class FileSystemFactory {
                 system = INSTANCES.get(name);
 
                 if (isSystemDoesNotExistOrClosed(system)) {
-                    system = new InFileFileSystem(
+                    system = new InFileFileSystemImpl(
                             name,
                             new InFileFileStore(name, configuration),
                             new InFileFileStoreView()
@@ -97,7 +97,7 @@ public final class FileSystemFactory {
     }
 
     public static void close(String name) {
-        InFileFileSystem system = INSTANCES.get(name);
+        InFileFileSystemImpl system = INSTANCES.get(name);
         if (system == null) {
             return;
         }
@@ -110,11 +110,11 @@ public final class FileSystemFactory {
         return UUID.randomUUID().toString();
     }
 
-    private static boolean isSystemExistsAndOpen(InFileFileSystem system) {
+    private static boolean isSystemExistsAndOpen(InFileFileSystemImpl system) {
         return system != null && system.isOpen();
     }
 
-    private static boolean isSystemDoesNotExistOrClosed(InFileFileSystem system) {
+    private static boolean isSystemDoesNotExistOrClosed(InFileFileSystemImpl system) {
         return system == null || !system.isOpen();
     }
 }

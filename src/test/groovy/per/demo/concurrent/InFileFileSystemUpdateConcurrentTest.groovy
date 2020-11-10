@@ -2,7 +2,7 @@ package per.demo.concurrent
 
 import per.demo.AbstractSpecification
 import per.demo.FileSystemFactory
-import per.demo.InFileFileSystem
+import per.demo.InFileFileSystemImpl
 import spock.lang.Unroll
 
 import java.util.concurrent.Callable
@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit
 
 class InFileFileSystemUpdateConcurrentTest extends AbstractSpecification {
 
-    private InFileFileSystem systemOne
+    private InFileFileSystemImpl systemOne
 
     def "should update valid contents when update files called from two threads"() {
         given:
@@ -31,8 +31,8 @@ class InFileFileSystemUpdateConcurrentTest extends AbstractSpecification {
         thread2.join()
 
         then:
-        systemOne.readFile("kek1") == "ch1" + CONTENT1
-        systemOne.readFile("kek2") == CONTENT2 + "ch2"
+        systemOne.readFileToString("kek1") == "ch1" + CONTENT1
+        systemOne.readFileToString("kek2") == CONTENT2 + "ch2"
     }
 
     @Unroll
@@ -56,7 +56,7 @@ class InFileFileSystemUpdateConcurrentTest extends AbstractSpecification {
 
         then:
         systemOne.contains(fileName)
-        systemOne.readFile(fileName) == "two"
+        systemOne.readFileToString(fileName) == "two"
 
         where:
         i << (1..10)
@@ -84,7 +84,7 @@ class InFileFileSystemUpdateConcurrentTest extends AbstractSpecification {
 
         then:
         systemOne.contains(fileName)
-        systemOne.readFile(fileName) in ["one", "two", "three", "four", "five"]
+        systemOne.readFileToString(fileName) in ["one", "two", "three", "four", "five"]
 
         where:
         i << (1..10)

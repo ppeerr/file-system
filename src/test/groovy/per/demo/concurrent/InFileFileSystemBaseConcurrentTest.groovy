@@ -2,15 +2,15 @@ package per.demo.concurrent
 
 import per.demo.AbstractSpecification
 import per.demo.FileSystemFactory
-import per.demo.InFileFileSystem
+import per.demo.InFileFileSystemImpl
 
 import java.nio.file.Files
 import java.nio.file.Paths
 
 class InFileFileSystemBaseConcurrentTest extends AbstractSpecification {
 
-    private InFileFileSystem systemOne
-    private InFileFileSystem systemTwo
+    private InFileFileSystemImpl systemOne
+    private InFileFileSystemImpl systemTwo
 
     def "should be able to create files when called from two threads"() {
         given:
@@ -48,8 +48,8 @@ class InFileFileSystemBaseConcurrentTest extends AbstractSpecification {
         thread2.join()
 
         then:
-        systemOne.readFile("kek1") == CONTENT1
-        systemOne.readFile("kek2") == CONTENT2
+        systemOne.readFileToString("kek1") == CONTENT1
+        systemOne.readFileToString("kek2") == CONTENT2
     }
 
     void cleanup() {

@@ -25,9 +25,9 @@ class InFileFileSystemRebuildTest extends AbstractSpecification {
         then:
         def fileNames = system.allFileNames()
         fileNames.size() == 3
-        system.readFile(name) == "Hello_world"
-        system.readFile(name + "2") == "Hello_world and You!2"
-        system.readFile(name + "3") == "Hello_world and You!3"
+        system.readFileToString(name) == "Hello_world"
+        system.readFileToString(name + "2") == "Hello_world and You!2"
+        system.readFileToString(name + "3") == "Hello_world and You!3"
     }
 
     def "should create FOUR files and rebuild metaspace TWO time"() {
@@ -48,10 +48,10 @@ class InFileFileSystemRebuildTest extends AbstractSpecification {
         then:
         def fileNames = system.allFileNames()
         fileNames.size() == 4
-        system.readFile(name) == "Hello_world"
-        system.readFile(name + "2") == "Hello_world and You!2"
-        system.readFile(name + "3") == "Hello_world and You!3"
-        system.readFile(name + "4") == "Hello_world and You!4"
+        system.readFileToString(name) == "Hello_world"
+        system.readFileToString(name + "2") == "Hello_world and You!2"
+        system.readFileToString(name + "3") == "Hello_world and You!3"
+        system.readFileToString(name + "4") == "Hello_world and You!4"
     }
 
     void cleanup() {
