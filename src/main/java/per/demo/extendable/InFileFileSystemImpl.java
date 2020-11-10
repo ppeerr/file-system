@@ -1,7 +1,11 @@
-package per.demo;
+package per.demo.extendable;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import per.demo.FileSystemFactory;
+import per.demo.InFileFileStore;
+import per.demo.InFileFileStoreView;
+import per.demo.InFileFileSystem;
 import per.demo.exception.*;
 import per.demo.model.FileInfo;
 import per.demo.model.MetaInfo;

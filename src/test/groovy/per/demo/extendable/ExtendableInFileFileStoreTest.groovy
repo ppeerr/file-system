@@ -1,14 +1,15 @@
-package per.demo
+package per.demo.extendable
 
+import per.demo.AbstractSpecification
 import per.demo.model.Configuration
 
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 
-class InFileFileStoreImplTest extends AbstractSpecification {
+class ExtendableInFileFileStoreTest extends AbstractSpecification {
 
-    private InFileFileStoreImpl fileStore
+    private ExtendableInFileFileStore fileStore
 
     def "should create FileSystem with valid from existent file"() {
         given:
@@ -17,7 +18,7 @@ class InFileFileStoreImplTest extends AbstractSpecification {
         Files.writeString(file, FILE_SYSTEM_CONTENT, StandardOpenOption.WRITE)
 
         when:
-        fileStore = new InFileFileStoreImpl(name + EXTENSION, Configuration.defaultConfiguration())
+        fileStore = new ExtendableInFileFileStore(name + EXTENSION, Configuration.defaultConfiguration())
 
         then:
         fileStore
@@ -33,7 +34,7 @@ class InFileFileStoreImplTest extends AbstractSpecification {
                 .metaDelimiter("--END--")
                 .metaBytesCount(5)
                 .build()
-        fileStore = new InFileFileStoreImpl(name + EXTENSION, smallMetaSpaceConfiguration)
+        fileStore = new ExtendableInFileFileStore(name + EXTENSION, smallMetaSpaceConfiguration)
 
         when:
         fileStore.saveContent("kek1", "any")

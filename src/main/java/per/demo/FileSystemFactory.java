@@ -1,6 +1,9 @@
 package per.demo;
 
 import per.demo.exception.FileSystemCreationException;
+import per.demo.extendable.ExtendableInFileFileStore;
+import per.demo.extendable.InFileFileStoreViewImpl;
+import per.demo.extendable.InFileFileSystemImpl;
 import per.demo.model.Configuration;
 
 import java.util.UUID;
@@ -92,7 +95,7 @@ public final class FileSystemFactory {
                 if (isSystemDoesNotExistOrClosed(system)) {
                     system = new InFileFileSystemImpl(
                             name,
-                            new InFileFileStoreImpl(name, config),
+                            new ExtendableInFileFileStore(name, config),
                             new InFileFileStoreViewImpl()
                     );
                     INSTANCES.put(name, system);

@@ -1,5 +1,6 @@
-package per.demo;
+package per.demo.extendable;
 
+import per.demo.InFileFileStoreView;
 import per.demo.model.FileInfo;
 import per.demo.model.MetaInfo;
 

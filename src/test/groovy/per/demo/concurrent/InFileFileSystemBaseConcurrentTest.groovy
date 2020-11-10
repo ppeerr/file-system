@@ -2,7 +2,7 @@ package per.demo.concurrent
 
 import per.demo.AbstractSpecification
 import per.demo.FileSystemFactory
-import per.demo.InFileFileSystemImpl
+import per.demo.extendable.InFileFileSystemImpl
 
 import java.nio.file.Files
 import java.nio.file.Paths

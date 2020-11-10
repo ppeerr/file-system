@@ -1,8 +1,10 @@
-package per.demo;
+package per.demo.extendable;
 
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
+import per.demo.File;
+import per.demo.InFileFileStore;
 import per.demo.model.MetaInfo;
 
 import java.io.Closeable;

@@ -1,6 +1,7 @@
-package per.demo;
+package per.demo.extendable;
 
 import lombok.SneakyThrows;
+import per.demo.InFileFileStore;
 import per.demo.model.Configuration;
 import per.demo.model.FileInfo;
 import per.demo.model.MetaInfo;
@@ -23,7 +24,7 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static per.demo.utils.MetaInfoUtils.*;
 import static per.demo.validator.ExistingFileValidator.checkMetaDataLines;
 
-class InFileFileStoreImpl implements InFileFileStore {
+public class ExtendableInFileFileStore implements InFileFileStore {
 
     private static final String BUF_FILE_SUFFIX = ".buf";
     private static final int BUFFER_SIZE = 1024;
@@ -43,7 +44,7 @@ class InFileFileStoreImpl implements InFileFileStore {
     private volatile long endPos;
 
     @SneakyThrows
-    InFileFileStoreImpl(String fileName, Configuration configuration) {
+    public ExtendableInFileFileStore(String fileName, Configuration configuration) {
         metaHeader = configuration.getMetaHeader();
         metaHeaderBytesCount = (metaHeader + "\n").getBytes().length;
         metaDelimiter = configuration.getMetaDelimiter();

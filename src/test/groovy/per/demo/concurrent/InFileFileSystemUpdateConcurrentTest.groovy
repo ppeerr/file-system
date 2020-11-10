@@ -2,7 +2,7 @@ package per.demo.concurrent
 
 import per.demo.AbstractSpecification
 import per.demo.FileSystemFactory
-import per.demo.InFileFileSystemImpl
+import per.demo.extendable.InFileFileSystemImpl
 import spock.lang.Unroll
 
 import java.util.concurrent.Callable
