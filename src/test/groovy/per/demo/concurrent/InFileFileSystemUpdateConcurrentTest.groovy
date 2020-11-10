@@ -2,7 +2,7 @@ package per.demo.concurrent
 
 import per.demo.AbstractSpecification
 import per.demo.FileSystemFactory
-import per.demo.extendable.InFileFileSystemImpl
+import per.demo.InFileFileSystem
 import spock.lang.Unroll
 
 import java.util.concurrent.Callable
@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit
 
 class InFileFileSystemUpdateConcurrentTest extends AbstractSpecification {
 
-    private InFileFileSystemImpl systemOne
+    private InFileFileSystem systemOne
 
     def "should update valid contents when update files called from two threads"() {
         given:
