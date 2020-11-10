@@ -48,7 +48,7 @@ public interface InFileFileSystem extends Closeable {
      * File with @param filename must be existed in system.
      *
      * @param fileName name of file
-     * @return {@linkplain  per.demo.File} abstraction
+     * @return {@linkplain  File} abstraction
      */
     File getFile(String fileName);
 

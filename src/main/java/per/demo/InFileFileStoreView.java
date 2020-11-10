@@ -3,66 +3,18 @@ package per.demo;
 import per.demo.model.FileInfo;
 import per.demo.model.MetaInfo;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Collectors;
 
-public class InFileFileStoreView {
+public interface InFileFileStoreView {
 
-    private ConcurrentMap<String, MetaInfo> positionsAndSizesByNames = new ConcurrentHashMap<>();
-    private final Object updateMapLock = new Object();
+    boolean contains(String fileName);
 
-    boolean contains(String fileName) {
-        return positionsAndSizesByNames.containsKey(fileName);
-    }
+    MetaInfo getMeta(String fileName);
 
-    MetaInfo getMeta(String fileName) {
-        MetaInfo metaInfo = positionsAndSizesByNames.get(fileName);
+    void putMeta(List<FileInfo> fileInfos);
 
-        return metaInfo != null
-                ? new MetaInfo(metaInfo)
-                : null;
-    }
+    void remove(String fileName);
 
-    void putMeta(List<FileInfo> fileInfos) {
-        List<FileInfo> fileInfosToUpdate = fileInfos.stream()
-                .filter(Objects::nonNull)
-                .filter(it -> it.getMetaInfo() != null)
-                .filter(it -> it.getMetaInfo().isPresent())
-                .collect(Collectors.toList());
-
-        if (fileInfosToUpdate.isEmpty()) {
-            return;
-        }
-
-        synchronized (updateMapLock) {
-            for (FileInfo fileInfo : fileInfosToUpdate) {
-                positionsAndSizesByNames.put(fileInfo.getName(), fileInfo.getMetaInfo());
-            }
-        }
-    }
-
-    void remove(String fileName) {
-        MetaInfo metaInfo = positionsAndSizesByNames.get(fileName);
-
-        if (isMetaInfoDoesNotExist(metaInfo)) {
-            return;
-        }
-
-        synchronized (updateMapLock) {
-            positionsAndSizesByNames.remove(fileName);
-        }
-    }
-
-    Map<String, MetaInfo> getMap() {
-        return new HashMap<>(positionsAndSizesByNames);
-    }
-
-    private boolean isMetaInfoDoesNotExist(MetaInfo metaInfo) {
-        return metaInfo == null || !metaInfo.isPresent();
-    }
+    Map<String, MetaInfo> getMap();
 }

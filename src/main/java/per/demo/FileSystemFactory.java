@@ -45,16 +45,21 @@ public final class FileSystemFactory {
     /**
      * Creates a new InFile file system with a {@linkplain Configuration#defaultConfiguration()
      * default configuration} and random generated name {@linkplain FileSystemFactory#newRandomFileSystemName()}.
+     *
+     * @return new InFileFileSystem object
      */
-    public static InFileFileSystemImpl newFileSystem() {
+    public static InFileFileSystem newFileSystem() {
         return newFileSystem(newRandomFileSystemName());
     }
 
     /**
      * Creates a new InFile file system with a {@linkplain Configuration#defaultConfiguration()
      * default configuration} but specific name.
+     *
+     * @param name name for new InFileFileSystem
+     * @return new InFileFileSystem object
      */
-    public static InFileFileSystemImpl newFileSystem(String name) {
+    public static InFileFileSystem newFileSystem(String name) {
         return newFileSystem(name, Configuration.defaultConfiguration());
     }
 
@@ -66,9 +71,13 @@ public final class FileSystemFactory {
      *
      * If there is already an InFileFileSystem instance created by the factory, but it was closed previously by
      * instance method {@linkplain InFileFileSystemImpl#close()}, then factory create new instance for the old file name
-     * and create the InFileFileStore from existing file {@linkplain InFileFileStore#initializeFromFile()}}
+     * and create the InFileFileStore from existing file
+     *
+     * @param name name for new InFileFileSystem
+     * @param config configuration for new InFileFileSystem (see {@linkplain Configuration})
+     * @return new InFileFileSystem object
      */
-    public static InFileFileSystemImpl newFileSystem(String name, Configuration configuration) {
+    public static InFileFileSystem newFileSystem(String name, Configuration config) {
         try {
             name += EXTENSION;
 
@@ -83,8 +92,8 @@ public final class FileSystemFactory {
                 if (isSystemDoesNotExistOrClosed(system)) {
                     system = new InFileFileSystemImpl(
                             name,
-                            new InFileFileStore(name, configuration),
-                            new InFileFileStoreView()
+                            new InFileFileStoreImpl(name, config),
+                            new InFileFileStoreViewImpl()
                     );
                     INSTANCES.put(name, system);
                 }
@@ -92,7 +101,7 @@ public final class FileSystemFactory {
                 return system;
             }
         } catch (Exception e) {
-            throw new FileSystemCreationException(name, configuration, e);
+            throw new FileSystemCreationException(name, config, e);
         }
     }
 

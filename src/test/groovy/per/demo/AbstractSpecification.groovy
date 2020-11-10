@@ -25,7 +25,7 @@ abstract class AbstractSpecification extends Specification {
         }
     }
 
-    protected static destroyStoreIfNotNull(InFileFileStore store) {
+    protected static destroyStoreIfNotNull(InFileFileStoreImpl store) {
         if (store != null && store.isOpen()) {
             store.close()
             Files.delete(Paths.get(store.getFilePath()))

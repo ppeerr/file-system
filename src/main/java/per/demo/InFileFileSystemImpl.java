@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
  * - {@linkplain #updateFile(String, String)} -- update already created file with new content
  * - {@linkplain #deleteFile(String)} -- delete already existing file
  * - {@linkplain #readFileToString(String)} -- read the content of a specific file
- * - {@linkplain #close()} -- close closeable nio.FileChannel resource {@linkplain InFileFileStore#close()} </pre>
+ * - {@linkplain #close()} -- close closeable resource {@linkplain InFileFileStore#close()} </pre>
  * <p>
  * And four additional public methods:
  * <pre>
@@ -128,7 +128,7 @@ public class InFileFileSystemImpl implements InFileFileSystem {
     }
 
     @Override
-    public File getFile(String fileName) {
+    public FileImpl getFile(String fileName) {
         try {
             MetaInfo meta = storeView.getMeta(fileName);
 
@@ -136,7 +136,7 @@ public class InFileFileSystemImpl implements InFileFileSystem {
                 throw new RuntimeException("No file '" + fileName + "' found");
             }
 
-            return new File(fileName, store, meta);
+            return new FileImpl(fileName, store, meta);
         } catch (Exception e) {
             throw new ReadFileException(fileName, e);
         }
@@ -190,7 +190,7 @@ public class InFileFileSystemImpl implements InFileFileSystem {
 
     private void remove(String fileName, MetaInfo meta) {
         synchronized (storeView) {
-            store.setDeletedMetaFlag(meta.getPresentFlagPosition());
+            store.delete(meta.getPresentFlagPosition());
 
             storeView.remove(fileName);
         }

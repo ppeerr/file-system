@@ -6,9 +6,9 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 
-class InFileFileStoreTest extends AbstractSpecification {
+class InFileFileStoreImplTest extends AbstractSpecification {
 
-    private InFileFileStore fileStore
+    private InFileFileStoreImpl fileStore
 
     def "should create FileSystem with valid from existent file"() {
         given:
@@ -17,7 +17,7 @@ class InFileFileStoreTest extends AbstractSpecification {
         Files.writeString(file, FILE_SYSTEM_CONTENT, StandardOpenOption.WRITE)
 
         when:
-        fileStore = new InFileFileStore(name + EXTENSION, Configuration.defaultConfiguration())
+        fileStore = new InFileFileStoreImpl(name + EXTENSION, Configuration.defaultConfiguration())
 
         then:
         fileStore
@@ -33,7 +33,7 @@ class InFileFileStoreTest extends AbstractSpecification {
                 .metaDelimiter("--END--")
                 .metaBytesCount(5)
                 .build()
-        fileStore = new InFileFileStore(name + EXTENSION, smallMetaSpaceConfiguration)
+        fileStore = new InFileFileStoreImpl(name + EXTENSION, smallMetaSpaceConfiguration)
 
         when:
         fileStore.saveContent("kek1", "any")
