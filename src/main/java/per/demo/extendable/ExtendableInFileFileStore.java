@@ -117,6 +117,10 @@ public class ExtendableInFileFileStore implements InFileFileStore {
     @SneakyThrows
     @Override
     public byte[] readContentBytes(long pos, long size) {
+        if (size <= 0) {
+            return new byte[0];
+        }
+
         int bufferSize;
         if (size > Integer.MAX_VALUE) {
             bufferSize = BUFFER_SIZE;
