@@ -2,16 +2,16 @@ package per.demo.concurrent
 
 import per.demo.AbstractSpecification
 import per.demo.FileSystemFactory
-import per.demo.extendable.InFileFileSystemImpl
+import per.demo.InFileFileSystem
 
 class InFileFileSystemConcurrentTest extends AbstractSpecification {
 
-    private InFileFileSystemImpl systemOne
-    private InFileFileSystemImpl systemTwo
+    private InFileFileSystem systemOne
+    private InFileFileSystem systemTwo
 
     def "should delete files when delete called from two threads"() {
         given:
-        systemOne = FileSystemFactory.newFileSystem()
+        systemOne = new FileSystemFactory().newFileSystem()
         systemOne.createFile("kek1", CONTENT1)
         systemOne.createFile("kek2", CONTENT2)
         systemOne.createFile("kek3", CONTENT1)
@@ -35,7 +35,7 @@ class InFileFileSystemConcurrentTest extends AbstractSpecification {
 
     def "should read contents when read called from two threads"() {
         given:
-        systemOne = FileSystemFactory.newFileSystem()
+        systemOne = new FileSystemFactory().newFileSystem()
         systemOne.createFile("kek1", CONTENT1)
         systemOne.createFile("kek2", CONTENT2)
 

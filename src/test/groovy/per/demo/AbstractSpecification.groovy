@@ -1,6 +1,5 @@
 package per.demo
 
-import per.demo.extendable.ExtendableInFileFileStore
 import spock.lang.Specification
 
 import java.nio.file.Files
@@ -26,7 +25,7 @@ abstract class AbstractSpecification extends Specification {
         }
     }
 
-    protected static destroyStoreIfNotNull(ExtendableInFileFileStore store) {
+    protected static destroyStoreIfNotNull(InFileFileStore store) {
         if (store != null && store.isOpen()) {
             store.close()
             Files.delete(Paths.get(store.getFilePath()))

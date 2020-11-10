@@ -44,19 +44,19 @@ public class ExtendableInFileFileStore implements InFileFileStore {
     private volatile long endPos;
 
     @SneakyThrows
-    public ExtendableInFileFileStore(String fileName, Configuration configuration) {
+    public ExtendableInFileFileStore(Path file, Configuration configuration) {
         metaHeader = configuration.getMetaHeader();
         metaHeaderBytesCount = (metaHeader + "\n").getBytes().length;
         metaDelimiter = configuration.getMetaDelimiter();
         metaBytesCount = configuration.getMetaBytesCount();
 
-        Path file = Paths.get(fileName);
+//        Path file = Paths.get(fileName);
         boolean fileExists = false;
         if (!Files.exists(file)) {
             this.file = Files.createFile(file);
         } else {
             fileExists = true;
-            this.file = file;
+            this.file = file.getFileName();
         }
 
         this.channel = getFileChannel(this.file);
@@ -173,7 +173,8 @@ public class ExtendableInFileFileStore implements InFileFileStore {
         return open;
     }
 
-    String getFilePath() {
+    @Override
+    public String getFilePath() {
         return file.toString();
     }
 

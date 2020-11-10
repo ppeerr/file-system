@@ -9,7 +9,7 @@ class InFileFileSystemTest extends AbstractSpecification {
     private InFileFileSystem system
 
     void setup() {
-        system = FileSystemFactory.newFileSystem(NAME)
+        system = new FileSystemFactory().newFileSystem(NAME)
     }
 
     def "should create file"() {

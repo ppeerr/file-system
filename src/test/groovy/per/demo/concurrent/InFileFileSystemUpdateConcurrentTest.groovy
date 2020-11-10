@@ -16,7 +16,7 @@ class InFileFileSystemUpdateConcurrentTest extends AbstractSpecification {
 
     def "should update valid contents when update files called from two threads"() {
         given:
-        systemOne = FileSystemFactory.newFileSystem()
+        systemOne = new FileSystemFactory().newFileSystem()
         systemOne.createFile("kek1", CONTENT1)
         systemOne.createFile("kek2", CONTENT2)
 
@@ -39,7 +39,7 @@ class InFileFileSystemUpdateConcurrentTest extends AbstractSpecification {
     def "should ALWAYS slow task update do last when two updates called concurrently. #i repeat"() {
         given:
         def executorService = Executors.newFixedThreadPool(2)
-        systemOne = FileSystemFactory.newFileSystem()
+        systemOne = new FileSystemFactory().newFileSystem()
         def fileName = "kek1"
 
         systemOne.createFile(fileName, CONTENT1)
@@ -66,7 +66,7 @@ class InFileFileSystemUpdateConcurrentTest extends AbstractSpecification {
     def "should successfully perform ALL updates when updates called concurrently. #i repeat"() {
         given:
         def executorService = Executors.newFixedThreadPool(5)
-        systemOne = FileSystemFactory.newFileSystem()
+        systemOne = new FileSystemFactory().newFileSystem()
         def fileName = "kek1"
 
         systemOne.createFile(fileName, CONTENT1)

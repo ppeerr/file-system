@@ -18,7 +18,7 @@ class ExtendableInFileFileStoreTest extends AbstractSpecification {
         Files.writeString(file, FILE_SYSTEM_CONTENT, StandardOpenOption.WRITE)
 
         when:
-        fileStore = new ExtendableInFileFileStore(name + EXTENSION, Configuration.defaultConfiguration())
+        fileStore = new ExtendableInFileFileStore(Paths.get(name + EXTENSION), Configuration.defaultConfiguration())
 
         then:
         fileStore
@@ -34,7 +34,7 @@ class ExtendableInFileFileStoreTest extends AbstractSpecification {
                 .metaDelimiter("--END--")
                 .metaBytesCount(5)
                 .build()
-        fileStore = new ExtendableInFileFileStore(name + EXTENSION, smallMetaSpaceConfiguration)
+        fileStore = new ExtendableInFileFileStore(Paths.get(name + EXTENSION), smallMetaSpaceConfiguration)
 
         when:
         fileStore.saveContent("kek1", "any")

@@ -10,7 +10,7 @@ class InFileFileSystemRebuildTest extends AbstractSpecification {
 
     def "should create THREE files and rebuild metaspace ONCE"() {
         given:
-        system = FileSystemFactory.newFileSystem(NAME, Configuration.builder()
+        system = new FileSystemFactory().newFileSystem(NAME, Configuration.builder()
                 .metaHeader("START")
                 .metaDelimiter("--END--")
                 .metaBytesCount(25)
@@ -32,7 +32,7 @@ class InFileFileSystemRebuildTest extends AbstractSpecification {
 
     def "should create FOUR files and rebuild metaspace TWO time"() {
         given:
-        system = FileSystemFactory.newFileSystem(NAME, Configuration.builder()
+        system = new FileSystemFactory().newFileSystem(NAME, Configuration.builder()
                 .metaHeader("START")
                 .metaDelimiter("--END--")
                 .metaBytesCount(25)

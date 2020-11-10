@@ -2,19 +2,19 @@ package per.demo.concurrent
 
 import per.demo.AbstractSpecification
 import per.demo.FileSystemFactory
-import per.demo.extendable.InFileFileSystemImpl
+import per.demo.InFileFileSystem
 
 import java.nio.file.Files
 import java.nio.file.Paths
 
 class InFileFileSystemBaseConcurrentTest extends AbstractSpecification {
 
-    private InFileFileSystemImpl systemOne
-    private InFileFileSystemImpl systemTwo
+    private InFileFileSystem systemOne
+    private InFileFileSystem systemTwo
 
     def "should be able to create files when called from two threads"() {
         given:
-        systemOne = FileSystemFactory.newFileSystem()
+        systemOne = new FileSystemFactory().newFileSystem()
 
         when:
         def thread1 = new Thread({ systemOne.createFile("kek1", CONTENT1) })
@@ -35,7 +35,7 @@ class InFileFileSystemBaseConcurrentTest extends AbstractSpecification {
 
     def "should write valid contents when create files called from two threads"() {
         given:
-        systemOne = FileSystemFactory.newFileSystem()
+        systemOne = new FileSystemFactory().newFileSystem()
 
         when:
         def thread1 = new Thread({ systemOne.createFile("kek1", CONTENT1) })

@@ -1,6 +1,5 @@
 package per.demo
 
-
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -12,7 +11,7 @@ class FileSystemFactoryTest extends AbstractSpecification {
 
     def "should create InFileFileSystem"() {
         when:
-        systemOne = FileSystemFactory.newFileSystem()
+        systemOne = new FileSystemFactory().newFileSystem()
 
         then:
         Path p = Paths.get(systemOne.getName())
@@ -24,7 +23,7 @@ class FileSystemFactoryTest extends AbstractSpecification {
         String name = "koko"
 
         when:
-        systemOne = FileSystemFactory.newFileSystem(name)
+        systemOne = new FileSystemFactory().newFileSystem(name)
 
         then:
         Path p = Paths.get(name + EXTENSION)
@@ -34,10 +33,11 @@ class FileSystemFactoryTest extends AbstractSpecification {
     def "should return the same references when create FileSystems for the same files"() {
         given:
         def name = UUID.randomUUID().toString()
+        def factory = new FileSystemFactory()
 
         when:
-        systemOne = FileSystemFactory.newFileSystem(name)
-        systemTwo = FileSystemFactory.newFileSystem(name)
+        systemOne = factory.newFileSystem(name)
+        systemTwo = factory.newFileSystem(name)
 
         then:
         systemOne
@@ -48,11 +48,12 @@ class FileSystemFactoryTest extends AbstractSpecification {
     def "should return new SystemTwo when create FileSystem for the same file after SystemOne closed"() {
         given:
         def name = UUID.randomUUID().toString()
+        def factory = new FileSystemFactory()
 
         when:
-        systemOne = FileSystemFactory.newFileSystem(name)
+        systemOne = factory.newFileSystem(name)
         systemOne.close()
-        systemTwo = FileSystemFactory.newFileSystem(name)
+        systemTwo = factory.newFileSystem(name)
 
         then:
         systemOne

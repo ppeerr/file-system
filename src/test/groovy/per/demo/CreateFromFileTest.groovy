@@ -19,7 +19,7 @@ class CreateFromFileTest extends AbstractSpecification {
         Files.writeString(file, FILE_SYSTEM_CONTENT, StandardOpenOption.WRITE)
 
         when:
-        system = FileSystemFactory.newFileSystem(NAME + 1)
+        system = new FileSystemFactory().newFileSystem(NAME + 1)
 
         then:
         system
@@ -36,7 +36,7 @@ class CreateFromFileTest extends AbstractSpecification {
                 .build()
 
         when:
-        FileSystemFactory.newFileSystem(NAME + 2, configuration)
+        new FileSystemFactory().newFileSystem(NAME + 2, configuration)
 
         then:
         thrown(FileSystemCreationException)

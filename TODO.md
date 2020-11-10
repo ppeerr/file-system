@@ -3,7 +3,7 @@
     При этом у самого InFileFileSystem есть метод публичный close, но он не реализует Closable. 
     Не понятно, что правильно использовать.
 
-2. (*ASK*) Невозможно иметь несколько независимых FileSystemFactory
+2. (**DONE**) Невозможно иметь несколько независимых FileSystemFactory
 
 3. (**DONE**) У метода FileSystemFactory#close нет никакой синхронизации на UPDATE_INSTANCES_LOCK, 
     кажется у него с методом newFileSystem может быть гонка данных.

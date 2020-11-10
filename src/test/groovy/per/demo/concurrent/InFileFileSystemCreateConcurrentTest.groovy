@@ -9,13 +9,14 @@ import java.util.concurrent.Callable
 import java.util.concurrent.Executors
 
 class InFileFileSystemCreateConcurrentTest extends AbstractSpecification {
+
     private InFileFileSystem systemOne
 
     @Unroll
     def "should successfully perform ALL creation when creation called concurrently. #i repeat"() {
         given:
         def executorService = Executors.newFixedThreadPool(5)
-        systemOne = FileSystemFactory.newFileSystem()
+        systemOne = new FileSystemFactory().newFileSystem()
         def fileName = "kek1"
         List<Callable> callableList = [
                 { systemOne.createFile(fileName + 1, "one") },

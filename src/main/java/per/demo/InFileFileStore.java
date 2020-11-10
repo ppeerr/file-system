@@ -19,4 +19,6 @@ public interface InFileFileStore extends Closeable {
     void delete(long presentFlagPosition);
 
     boolean isOpen();
+
+    String getFilePath();
 }
