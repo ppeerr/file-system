@@ -7,6 +7,7 @@ import per.demo.model.FileInfo;
 import per.demo.model.MetaInfo;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -28,6 +29,7 @@ import static per.demo.validator.ExistingFileValidator.checkMetaDataLines;
 public class ExtendableInFileFileStore implements InFileFileStore {
 
     private static final String BUF_FILE_SUFFIX = ".buf";
+    private static final String BUF_FILE_SUFFIX_META = ".buf_meta";
     private static final int BUFFER_SIZE = 1024;
 
     private final String metaHeader;
@@ -238,66 +240,65 @@ public class ExtendableInFileFileStore implements InFileFileStore {
         byte[] newFileMetaContentBytes = buildMetaContent(fileName, contentLength, startPos);
         List<FileInfo> fileInfosToUpdate = new ArrayList<>();
 
-        if (needToIncreaseMetaSpace(newFileMetaContentBytes.length)) {
+        if (needToIncreaseMeta(newFileMetaContentBytes.length)) {
+            FileInfo newFile = new FileInfo(fileName, new MetaInfo(startPos, contentLength, -1));
             do {
-                FileInfo newFile = new FileInfo(fileName, new MetaInfo(startPos, contentLength, -1));
-                fileInfosToUpdate = new ArrayList<>(increaseMetaSpaceAndRebuild(newFile)); //TODO broken
-            } while (needToIncreaseMetaSpace(0));
+                fileInfosToUpdate = new ArrayList<>(increaseMetaSpaceAndRebuild(newFile));
+                newFile = fileInfosToUpdate.get(fileInfosToUpdate.size() - 1);
+
+                newFileMetaContentBytes = buildMetaContent(newFile.getName(), newFile.getMetaInfo().getSize(), newFile.getMetaInfo().getStartPosition());
+            } while (needToIncreaseMeta(newFileMetaContentBytes.length));
         } else {
-            writeMeta(newFileMetaContentBytes);
             fileInfosToUpdate.add(getNewFileInfoToUpdate(fileName, contentLength, startPos));
         }
+
+        writeMeta(newFileMetaContentBytes);
 
         return fileInfosToUpdate;
     }
 
     @SneakyThrows
-    private synchronized List<FileInfo> increaseMetaSpaceAndRebuild(FileInfo newFileInfo) {
-        int newMetaBytes = metaBytesCount << 1;
-
-        String bufFileName = file.toString() + BUF_FILE_SUFFIX;
-        Path bufFile = Paths.get(bufFileName);
-        bufFile = Files.createFile(bufFile);
-        FileChannel bufChannel = getFileChannel(bufFile);
-
-        String newInitialStartState = getInitialMetaContent(metaHeader, newMetaBytes, metaDelimiter);
+    private List<FileInfo> increaseMetaSpaceAndRebuild(FileInfo newFileInfo) {
+        int newMetaBytesCount = metaBytesCount << 1;
         int newMetaPos = (metaHeader + "\n").getBytes(StandardCharsets.UTF_8).length;
 
-        ByteBuffer buff = ByteBuffer.wrap(newInitialStartState.getBytes(StandardCharsets.UTF_8));
-        bufChannel.write(buff);
+        Path bufFile = Files.createFile(Paths.get(file.toString() + BUF_FILE_SUFFIX));
+        FileChannel bufChannel = getFileChannel(bufFile);
 
-        String oldMeta = readContent(metaHeaderBytesCount, metaBytesCount);
-        List<String> oldMetaElements = getMetaDataElements(oldMeta);
-        List<String> presentOldMetaElements = findOnlyPresentMetaElements(oldMetaElements);
+        writeInitialMetaState(newMetaBytesCount, bufChannel);
 
+        List<FileInfo> oldFileInfos = getOldFileInfos();
+        oldFileInfos.add(newFileInfo);
+
+        long presentFlagPos = newMetaPos;
+        ByteBuffer buff;
         List<String> metaInfosToStore = new ArrayList<>();
         List<FileInfo> fileInfosToUpdate = new ArrayList<>();
-        long presentFlagPos = newMetaPos;
-        for (String metaElement : presentOldMetaElements) {
-            String[] metaElementParts = metaElement.split(",");
+        for (int i = 0; i < oldFileInfos.size(); i++) {
+            FileInfo metaElement = oldFileInfos.get(i);
 
-            String fileName = metaElementParts[0].substring(2, metaElementParts[0].length() - 1);
-            long oldStart = Long.parseLong(metaElementParts[1]);
-            long size = Integer.parseInt(metaElementParts[2]);
-            String state = metaElementParts[3].substring(0, metaElementParts[3].length() - 1);
+            MetaInfo metaInfo = metaElement.getMetaInfo();
 
-            byte[] contentBytes = (readContent(oldStart, size)).getBytes(StandardCharsets.UTF_8);
+            byte[] contentBytes = readContent(metaInfo.getStartPosition(), metaInfo.getSize())
+                    .getBytes(StandardCharsets.UTF_8);
             buff = ByteBuffer.wrap(contentBytes);
 
             long newStart = bufChannel.position();
             bufChannel.write(buff);
 
-            String currentNewFileInfoElement = "{\"" + fileName + "\"," + newStart + "," + size + "," + state + "}";
-            metaInfosToStore.add(currentNewFileInfoElement);
+            String currentNewFileInfoElement = "{\"" + metaElement.getName() + "\"," + newStart + "," + metaInfo.getSize() + "," + "A}";
+            if (i != oldFileInfos.size() - 1) {
+                metaInfosToStore.add(currentNewFileInfoElement);
+            }
 
             presentFlagPos += currentNewFileInfoElement
                     .substring(0, currentNewFileInfoElement.length() - 2).getBytes(StandardCharsets.UTF_8).length;
 
             fileInfosToUpdate.add(new FileInfo(
-                    fileName,
+                    metaElement.getName(),
                     new MetaInfo(
                             newStart,
-                            size,
+                            metaInfo.getSize(),
                             presentFlagPos
                     )
             ));
@@ -305,36 +306,6 @@ public class ExtendableInFileFileStore implements InFileFileStore {
             presentFlagPos += currentNewFileInfoElement
                     .substring(currentNewFileInfoElement.length() - 2).getBytes(StandardCharsets.UTF_8).length;
         }
-
-        String fileName = newFileInfo.getName();
-        long oldStart = newFileInfo.getMetaInfo().getStartPosition();
-        long size = newFileInfo.getMetaInfo().getSize();
-        String state = "A";
-
-        byte[] contentBytes = (readContent(oldStart, size)).getBytes(StandardCharsets.UTF_8);
-        buff = ByteBuffer.wrap(contentBytes);
-
-        long newStart = bufChannel.position();
-        bufChannel.write(buff);
-
-        String currentNewFileInfoElement = "{\"" + fileName + "\"," + newStart + "," + size + "," + state + "}";
-        metaInfosToStore.add(currentNewFileInfoElement);
-
-        presentFlagPos += currentNewFileInfoElement
-                .substring(0, currentNewFileInfoElement.length() - 2).getBytes(StandardCharsets.UTF_8).length;
-
-        fileInfosToUpdate.add(new FileInfo(
-                fileName,
-                new MetaInfo(
-                        newStart,
-                        size,
-                        presentFlagPos
-                )
-        ));
-
-        presentFlagPos += currentNewFileInfoElement
-                .substring(currentNewFileInfoElement.length() - 2).getBytes(StandardCharsets.UTF_8).length;
-
         String metaContentToStore = String.join("", metaInfosToStore);
         buff = ByteBuffer.wrap((metaContentToStore).getBytes(StandardCharsets.UTF_8));
         bufChannel.write(buff, newMetaPos);
@@ -352,9 +323,36 @@ public class ExtendableInFileFileStore implements InFileFileStore {
                 .position(newEndPos);
 
         metaPos = new AtomicLong(newMetaPos + metaContentToStore.length());
-        metaBytesCount = newMetaBytes;
+        metaBytesCount = newMetaBytesCount;
 
         return fileInfosToUpdate;
+    }
+
+    private List<FileInfo> getOldFileInfos() {
+        String oldMeta = readContent(metaHeaderBytesCount, metaBytesCount);
+
+        return getMetaDataElements(oldMeta).stream()
+                .filter(withPresentState())
+                .map(metaElement -> {
+                    String[] metaElementParts = metaElement.split(",");
+
+                    String fileName = metaElementParts[0].substring(2, metaElementParts[0].length() - 1);
+                    long start = Long.parseLong(metaElementParts[1]);
+                    long size = Integer.parseInt(metaElementParts[2]);
+
+                    return new FileInfo(
+                            fileName,
+                            new MetaInfo(start, size, -1)
+                    );
+                })
+                .collect(Collectors.toList());
+    }
+
+    private void writeInitialMetaState(int newMetaBytesCount, FileChannel bufChannel) throws IOException {
+        String newInitialStartState = getInitialMetaContent(metaHeader, newMetaBytesCount, metaDelimiter);
+
+        ByteBuffer buff = ByteBuffer.wrap(newInitialStartState.getBytes(StandardCharsets.UTF_8));
+        bufChannel.write(buff);
     }
 
     @SneakyThrows
@@ -388,9 +386,7 @@ public class ExtendableInFileFileStore implements InFileFileStore {
         return FileChannel.open(file, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.DSYNC);
     }
 
-    private boolean needToIncreaseMetaSpace(long metaContentSize) {
-        int lastPossibleMetaPos = metaHeaderBytesCount + metaBytesCount;
-
-        return (metaPos.get() + metaContentSize) > lastPossibleMetaPos;
+    private boolean needToIncreaseMeta(long metaContentSize) {
+        return needToIncreaseMetaSpace(metaHeaderBytesCount, metaBytesCount, metaContentSize, metaPos.get());
     }
 }

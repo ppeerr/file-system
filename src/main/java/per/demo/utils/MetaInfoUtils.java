@@ -4,9 +4,9 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class MetaInfoUtils {
 
@@ -16,6 +16,17 @@ public class MetaInfoUtils {
         return metaHeader + "\n" +
                 StringUtils.repeat(' ', metaBytesCount) + "\n" +
                 metaDelimiter + "\n";
+    }
+
+    public static boolean needToIncreaseMetaSpace(
+            int metaHeaderBytesCount,
+            int metaBytesCount,
+            long metaContentSize,
+            long currentMetaPos
+    ) {
+        int lastPossibleMetaPos = metaHeaderBytesCount + metaBytesCount;
+
+        return (currentMetaPos + metaContentSize) > lastPossibleMetaPos;
     }
 
     public static List<String> getMetaDataElements(String metaString) {
@@ -30,12 +41,10 @@ public class MetaInfoUtils {
         return allMatches;
     }
 
-    public static List<String> findOnlyPresentMetaElements(List<String> metaElements) {
-        return metaElements.stream()
-                .filter(info -> {
-                    String state = info.substring(info.length() - 2, info.length() - 1);
-                    return state.equals("A");
-                })
-                .collect(Collectors.toList());
+    public static Predicate<String> withPresentState() {
+        return info -> {
+            String state = info.substring(info.length() - 2, info.length() - 1);
+            return state.equals("A");
+        };
     }
 }

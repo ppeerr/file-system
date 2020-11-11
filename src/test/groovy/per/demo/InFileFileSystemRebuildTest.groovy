@@ -148,6 +148,26 @@ class InFileFileSystemRebuildTest extends AbstractSpecification {
         system.readFileToString(name + "4") == "Hello_world and You!4"
     }
 
+    def "should create TWO files and rebuild metaspace TWO times for the 2nd file. Channel"() {
+        given:
+        system = new FileSystemFactory().newFileSystem(NAME, Configuration.builder()
+                .metaHeader("START")
+                .metaDelimiter("--END--")
+                .metaBytesCount(17)
+                .build())
+        def name = "kek"
+
+        when:
+        system.createFile(name, Channels.newChannel(new ByteArrayInputStream("Hello_world".getBytes())))
+        system.createFile(name + "1234567", Channels.newChannel(new ByteArrayInputStream("Hello_world and You!2".getBytes())))
+
+        then:
+        def fileNames = system.allFileNames()
+        fileNames.size() == 2
+        system.readFileToString(name) == "Hello_world"
+        system.readFileToString(name + "1234567") == "Hello_world and You!2"
+    }
+
     void cleanup() {
         destroySystemIfNotNull(system)
     }
