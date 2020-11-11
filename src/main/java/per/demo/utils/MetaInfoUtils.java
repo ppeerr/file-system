@@ -18,17 +18,6 @@ public class MetaInfoUtils {
                 metaDelimiter + "\n";
     }
 
-    public static boolean needToIncreaseMetaSpace(
-            int metaHeaderBytesCount,
-            int metaBytesCount,
-            int metaContentSize,
-            long currentMetaPos
-    ) {
-        int lastPossibleMetaPos = metaHeaderBytesCount + metaBytesCount;
-
-        return (currentMetaPos + metaContentSize) > lastPossibleMetaPos;
-    }
-
     public static List<String> getMetaDataElements(String metaString) {
         List<String> allMatches = new ArrayList<>();
         Matcher m = Pattern
