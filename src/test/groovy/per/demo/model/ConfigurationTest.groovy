@@ -11,6 +11,7 @@ class ConfigurationTest extends Specification {
                 .metaHeader("header")
                 .metaDelimiter("delimiter")
                 .metaBytesCount(30)
+                .bufferSize(512)
                 .build()
 
         then:

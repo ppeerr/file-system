@@ -187,7 +187,7 @@ public class InFileFileSystemImpl implements InFileFileSystem {
                 throw new RuntimeException("No file '" + fileName + "' found");
             }
 
-            return store.readContent(meta.getStartPosition(), meta.getSize());
+            return store.readContentString(meta.getStartPosition(), meta.getSize());
         } catch (Exception e) {
             throw new ReadFileException(fileName, e);
         }

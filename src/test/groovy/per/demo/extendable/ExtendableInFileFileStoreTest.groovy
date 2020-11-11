@@ -33,6 +33,7 @@ class ExtendableInFileFileStoreTest extends AbstractSpecification {
                 .metaHeader("START")
                 .metaDelimiter("--END--")
                 .metaBytesCount(5)
+                .bufferSize(512)
                 .build()
         fileStore = new ExtendableInFileFileStore(Paths.get(name + EXTENSION), smallMetaSpaceConfiguration)
 

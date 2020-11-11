@@ -15,7 +15,7 @@ public interface InFileFileStore extends Closeable {
 
     List<FileInfo> saveContent(String fileName, ReadableByteChannel contentChannel);
 
-    String readContent(long pos, long size);
+    String readContentString(long pos, long size);
 
     byte[] readContentBytes(long pos, long size);
 

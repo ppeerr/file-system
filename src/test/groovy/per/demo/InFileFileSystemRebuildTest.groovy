@@ -16,6 +16,7 @@ class InFileFileSystemRebuildTest extends AbstractSpecification {
                 .metaHeader("START")
                 .metaDelimiter("--END--")
                 .metaBytesCount(25)
+                .bufferSize(512)
                 .build())
         def name = "kek"
 
@@ -38,6 +39,7 @@ class InFileFileSystemRebuildTest extends AbstractSpecification {
                 .metaHeader("START")
                 .metaDelimiter("--END--")
                 .metaBytesCount(25)
+                .bufferSize(512)
                 .build())
         def name = "kek"
 
@@ -60,6 +62,7 @@ class InFileFileSystemRebuildTest extends AbstractSpecification {
                 .metaHeader("START")
                 .metaDelimiter("--END--")
                 .metaBytesCount(25)
+                .bufferSize(512)
                 .build())
         def name = "kek"
 
@@ -82,6 +85,7 @@ class InFileFileSystemRebuildTest extends AbstractSpecification {
                 .metaHeader("START")
                 .metaDelimiter("--END--")
                 .metaBytesCount(25)
+                .bufferSize(512)
                 .build())
         def name = "kek"
 
@@ -106,6 +110,7 @@ class InFileFileSystemRebuildTest extends AbstractSpecification {
                 .metaHeader("START")
                 .metaDelimiter("--END--")
                 .metaBytesCount(25)
+                .bufferSize(512)
                 .build())
         def name = "kek"
 
@@ -130,6 +135,7 @@ class InFileFileSystemRebuildTest extends AbstractSpecification {
                 .metaHeader("START")
                 .metaDelimiter("--END--")
                 .metaBytesCount(25)
+                .bufferSize(512)
                 .build())
         def name = "kek"
 
@@ -154,6 +160,7 @@ class InFileFileSystemRebuildTest extends AbstractSpecification {
                 .metaHeader("START")
                 .metaDelimiter("--END--")
                 .metaBytesCount(17)
+                .bufferSize(512)
                 .build())
         def name = "kek"
 

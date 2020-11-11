@@ -33,6 +33,7 @@ class CreateFromFileTest extends AbstractSpecification {
                 .metaHeader("NOT_valid")
                 .metaDelimiter("----META ENDS----")
                 .metaBytesCount(2000)
+                .bufferSize(1024)
                 .build()
 
         when:

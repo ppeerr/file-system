@@ -29,13 +29,12 @@ import static per.demo.validator.ExistingFileValidator.checkMetaDataLines;
 public class ExtendableInFileFileStore implements InFileFileStore {
 
     private static final String BUF_FILE_SUFFIX = ".buf";
-    private static final String BUF_FILE_SUFFIX_META = ".buf_meta";
-    private static final int BUFFER_SIZE = 1024;
 
     private final String metaHeader;
     private final int metaHeaderBytesCount;
     private final String metaDelimiter;
     private int metaBytesCount;
+    private int bufferSize;
 
     private Path file;
     private FileChannel channel;
@@ -51,6 +50,7 @@ public class ExtendableInFileFileStore implements InFileFileStore {
         metaHeaderBytesCount = (metaHeader + "\n").getBytes(StandardCharsets.UTF_8).length;
         metaDelimiter = configuration.getMetaDelimiter();
         metaBytesCount = configuration.getMetaBytesCount();
+        bufferSize = configuration.getBufferSize();
 
         boolean fileExists = false;
         if (!Files.exists(file)) {
@@ -90,7 +90,7 @@ public class ExtendableInFileFileStore implements InFileFileStore {
         long startPos = channel.size();
 
         do {
-            buffer = contentStream.readNBytes(BUFFER_SIZE);
+            buffer = contentStream.readNBytes(bufferSize);
 
             if (buffer.length > 0) {
                 ByteBuffer buff = ByteBuffer.wrap(buffer);
@@ -110,7 +110,7 @@ public class ExtendableInFileFileStore implements InFileFileStore {
     public synchronized List<FileInfo> saveContent(String fileName, ReadableByteChannel contentChannel) {
         long contentSize = 0;
         int lastReadCount;
-        ByteBuffer buff = ByteBuffer.allocate(BUFFER_SIZE);
+        ByteBuffer buff = ByteBuffer.allocate(bufferSize);
         long startPos = channel.size();
 
         do {
@@ -132,7 +132,7 @@ public class ExtendableInFileFileStore implements InFileFileStore {
 
     @SneakyThrows
     @Override
-    public String readContent(long pos, long size) {
+    public String readContentString(long pos, long size) {
         return new String(readContentBytes(pos, size), StandardCharsets.UTF_8);
     }
 
@@ -145,9 +145,9 @@ public class ExtendableInFileFileStore implements InFileFileStore {
 
         int bufferSize;
         if (size > (long) Integer.MAX_VALUE) {
-            bufferSize = BUFFER_SIZE;
+            bufferSize = this.bufferSize;
         } else {
-            bufferSize = Math.min(BUFFER_SIZE, (int) size);
+            bufferSize = Math.min(this.bufferSize, (int) size);
         }
 
         ByteBuffer buff = ByteBuffer.allocate(bufferSize);
@@ -156,7 +156,7 @@ public class ExtendableInFileFileStore implements InFileFileStore {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             while (channel.read(buff, currentPos) > 0) {
                 out.write(buff.array(), 0, buff.position());
-                currentPos += buff.position(); //TODO check
+                currentPos += buff.position();
                 buff.clear();
 
                 int remaining = (int) ((pos + size) - currentPos);
@@ -205,7 +205,7 @@ public class ExtendableInFileFileStore implements InFileFileStore {
     }
 
     String getMetaContent() {
-        return readContent(metaHeaderBytesCount, metaBytesCount);
+        return readContentString(metaHeaderBytesCount, metaBytesCount);
     }
 
     @SneakyThrows
@@ -276,15 +276,10 @@ public class ExtendableInFileFileStore implements InFileFileStore {
         List<FileInfo> fileInfosToUpdate = new ArrayList<>();
         for (int i = 0; i < oldFileInfos.size(); i++) {
             FileInfo metaElement = oldFileInfos.get(i);
-
             MetaInfo metaInfo = metaElement.getMetaInfo();
 
-            byte[] contentBytes = readContent(metaInfo.getStartPosition(), metaInfo.getSize())
-                    .getBytes(StandardCharsets.UTF_8);
-            buff = ByteBuffer.wrap(contentBytes);
-
             long newStart = bufChannel.position();
-            bufChannel.write(buff);
+            channel.transferTo(metaInfo.getStartPosition(), metaInfo.getSize(), bufChannel);
 
             String currentNewFileInfoElement = "{\"" + metaElement.getName() + "\"," + newStart + "," + metaInfo.getSize() + "," + "A}";
             if (i != oldFileInfos.size() - 1) {
@@ -296,11 +291,7 @@ public class ExtendableInFileFileStore implements InFileFileStore {
 
             fileInfosToUpdate.add(new FileInfo(
                     metaElement.getName(),
-                    new MetaInfo(
-                            newStart,
-                            metaInfo.getSize(),
-                            presentFlagPos
-                    )
+                    new MetaInfo(newStart, metaInfo.getSize(), presentFlagPos)
             ));
 
             presentFlagPos += currentNewFileInfoElement
@@ -311,40 +302,32 @@ public class ExtendableInFileFileStore implements InFileFileStore {
         bufChannel.write(buff, newMetaPos);
         bufChannel.force(false);
 
-        this.channel.close();
+        renewFromBufChannel(newMetaBytesCount, newMetaPos, bufFile, bufChannel, metaContentToStore);
 
+        return fileInfosToUpdate;
+    }
+
+    private void renewFromBufChannel(int newMetaBytesCount, int newMetaPos, Path bufFile,
+                                     FileChannel bufChannel, String metaContentToStore) throws IOException {
+        this.channel.close();
         long newEndPos = bufChannel.size();
         bufChannel.close();
 
         Files.move(bufFile, Paths.get(this.file.toString()), REPLACE_EXISTING);
 
         this.file = Paths.get(this.file.toString());
-        this.channel = getFileChannel(this.file)
-                .position(newEndPos);
+        this.channel = getFileChannel(this.file).position(newEndPos);
 
         metaPos = new AtomicLong(newMetaPos + metaContentToStore.length());
         metaBytesCount = newMetaBytesCount;
-
-        return fileInfosToUpdate;
     }
 
     private List<FileInfo> getOldFileInfos() {
-        String oldMeta = readContent(metaHeaderBytesCount, metaBytesCount);
+        String oldMeta = readContentString(metaHeaderBytesCount, metaBytesCount);
 
         return getMetaDataElements(oldMeta).stream()
                 .filter(withPresentState())
-                .map(metaElement -> {
-                    String[] metaElementParts = metaElement.split(",");
-
-                    String fileName = metaElementParts[0].substring(2, metaElementParts[0].length() - 1);
-                    long start = Long.parseLong(metaElementParts[1]);
-                    long size = Integer.parseInt(metaElementParts[2]);
-
-                    return new FileInfo(
-                            fileName,
-                            new MetaInfo(start, size, -1)
-                    );
-                })
+                .map(FileInfo::from)
                 .collect(Collectors.toList());
     }
 
