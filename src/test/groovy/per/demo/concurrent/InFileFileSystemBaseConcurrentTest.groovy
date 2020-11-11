@@ -29,8 +29,8 @@ class InFileFileSystemBaseConcurrentTest extends AbstractSpecification {
         then:
         def lines = Files.readAllLines(Paths.get(systemOne.getName()))
         !lines.isEmpty()
-        lines.contains(CONTENT1)
-        lines.contains(CONTENT2)
+        lines[3].contains(CONTENT1)
+        lines[3].contains(CONTENT2)
     }
 
     def "should write valid contents when create files called from two threads"() {
