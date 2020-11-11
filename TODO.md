@@ -18,4 +18,5 @@
 
 7. (**DONE**) Смена кодировки между перезапускали приводит к некорректной работе
 
-8. https://github.com/ppeerr/file-system/blob/main/src/main/java/per/demo/InFileFileStore.java#L165 Страшный метод с кучей магии и модификацией объекта, его не понять за разумное время
+8. (**DONE**) https://github.com/ppeerr/file-system/blob/main/src/main/java/per/demo/InFileFileStore.java#L165 
+    Страшный метод с кучей магии и модификацией объекта, его не понять за разумное время

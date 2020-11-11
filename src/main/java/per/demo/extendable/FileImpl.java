@@ -39,6 +39,8 @@ public class FileImpl implements File, Closeable {
     @Override
     public byte[] read(long offset, long byteCount) {
         Validate.isTrue(offset < metaInfo.getSize(), "offset must be less than file size");
+        Validate.isTrue(byteCount >= 0, "byteCount must NOT be negative");
+
         long neededByteCount = Math.min(byteCount, metaInfo.getSize() - offset);
 
         return store.readContentBytes(metaInfo.getStartPosition() + offset, neededByteCount);

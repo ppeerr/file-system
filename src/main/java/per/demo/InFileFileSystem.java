@@ -19,8 +19,22 @@ public interface InFileFileSystem extends Closeable {
      */
     void createFile(String fileName, String content);
 
+    /**
+     * Create file with specific file name and content.
+     * If file with the same file name exists in store view then Exception is thrown.
+     *
+     * @param fileName name of new file
+     * @param contentStream InputStream content
+     */
     void createFile(String fileName, InputStream contentStream);
 
+    /**
+     * Create file with specific file name and content.
+     * If file with the same file name exists in store view then Exception is thrown.
+     *
+     * @param fileName name of new file
+     * @param contentChannel ReadableByteChannel content
+     */
     void createFile(String fileName, ReadableByteChannel contentChannel);
 
     /**
@@ -41,6 +55,13 @@ public interface InFileFileSystem extends Closeable {
      */
     void updateFile(String fileName, InputStream contentStream);
 
+    /**
+     * Update file with specific file name.
+     * File with @param filename must be existed in system.
+     *
+     * @param fileName name of new file
+     * @param contentChannel ReadableByteChannel stream
+     */
     void updateFile(String fileName, ReadableByteChannel contentChannel);
 
     /**
@@ -71,6 +92,11 @@ public interface InFileFileSystem extends Closeable {
 
     List<String> allFileNames();
 
+    /**
+     * Get meta info map
+     *
+     * @return Map with meta info by file name
+     */
     Map<String, MetaInfo> getMap();
 
     boolean contains(String fileName);

@@ -33,14 +33,12 @@ done:
 - refactor quite complex InFileFileStore class;
 
 Текущие Trade-off'ы и допущения:
-- для легкости разработки тестирования примем реализацию на строках вместо чистых байтов. Очевидно, 
-    что манипуляции будут работать и для массивов байт.
 - имена файлов внутри реализованной файловой системы могут содержать только латинские буквы и арабские цифры. 
     Это нужно для облегчения парсинга.
 
 Getting started
 ---------------
-The latest release is [0.1.0](https://github.com/ppeerr/file-system/releases/tag/v0.1.0)
+The latest release is [0.2.0](https://github.com/ppeerr/file-system/releases/tag/v0.2.0)
 
 Basic use
 ---------
@@ -67,6 +65,7 @@ What's supported?
     при условии, что файл верного формата (см. per.demo.validator.ExistingFileValidator).
 - Файловая система является thread-safe реализацией.
 - Реализована модель саморасширяющегося хранилища файлов (см. per.demo.extendable.ExtendableInFileFileStore).
-- Для кеширования мета информации о файлах используется реализация Store view (см. per.demo.InFileFileStoreView)
-- Внутри оного jvm приложения не должно существовать два экземпляра `InFileFileSystem`, привязанного к одному файлу в ОС;
-    за этим следит фабрика (см. per.demo.FileSystemFactory)
+- Для кеширования мета информации о файлах используется реализация Store view (см. per.demo.InFileFileStoreView).
+- Загрузка контента может происходить как полным куском информации в памяти так и при помощи `java.io.InputStream` 
+    и `java.nio.channels.ReadableChannel`.
+- Выгрузка контента поддержвается как полностью так и по частям с помощью абстрации `per.demo.File`.

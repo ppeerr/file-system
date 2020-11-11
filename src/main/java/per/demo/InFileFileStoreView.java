@@ -16,5 +16,10 @@ public interface InFileFileStoreView {
 
     void remove(String fileName);
 
+    /**
+     * Get meta info map
+     *
+     * @return Map with meta info by file name
+     */
     Map<String, MetaInfo> getMap();
 }
