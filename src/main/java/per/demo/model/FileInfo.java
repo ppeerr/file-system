@@ -4,8 +4,6 @@ import lombok.Getter;
 
 @Getter
 public class FileInfo {
-    private static final int UNDEFINED_PRESENT_FLAG_POSITION = -1;
-
     private final String name;
     private final MetaInfo metaInfo;
 
@@ -21,6 +19,6 @@ public class FileInfo {
         long start = Long.parseLong(metaElementParts[1]);
         long size = Integer.parseInt(metaElementParts[2]);
 
-        return new FileInfo(fileName, new MetaInfo(start, size, UNDEFINED_PRESENT_FLAG_POSITION));
+        return new FileInfo(fileName, new MetaInfo(start, size));
     }
 }
