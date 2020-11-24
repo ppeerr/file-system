@@ -20,7 +20,8 @@ import java.util.concurrent.ConcurrentMap;
  *
  * <pre>
  *   // A file system with the default configuration
- *   FileSystem fileSystem = FileSystemFactory.newFileSystem(); </pre>
+ *   FileSystemFactory factory = new FileSystemFactory()
+ *   FileSystem fileSystem = factory.newFileSystem(); </pre>
  *
  * <p>Additionally, the file system can be customized by creating a custom
  * {@link Configuration}. A new configuration can be created by lombok {@link Configuration#builder()}.
@@ -30,7 +31,8 @@ import java.util.concurrent.ConcurrentMap;
  *
  * <pre>
  *   // Create with a custom configuration
- *   FileSystem fileSystem = FileSystemFactory.newFileSystem("specificName", Configuration.builder()
+ *   FileSystemFactory factory = new FileSystemFactory()
+ *   FileSystem fileSystem = factory.newFileSystem("specificName", Configuration.builder()
  *                 .metaHeader("START")
  *                 .metaDelimiter("--END--")
  *                 .metaBytesCount(5)

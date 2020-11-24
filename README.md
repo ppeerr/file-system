@@ -50,7 +50,8 @@ import per.demo.FileSystemFactory;
 ...
 
 // For a simple file system with default config:
-InFileFileSystem fs = FileSystemFactory.newFileSystem();
+FileSystemFactory factory = new FileSystemFactory()
+InFileFileSystem fs = factory.newFileSystem();
 fs.createFile("test", "content");
 ```
 
