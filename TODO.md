@@ -20,3 +20,5 @@
 
 8. (**DONE**) https://github.com/ppeerr/file-system/blob/main/src/main/java/per/demo/InFileFileStore.java#L165 
     Страшный метод с кучей магии и модификацией объекта, его не понять за разумное время
+    
+   check
